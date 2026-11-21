@@ -12,12 +12,14 @@ removed.
 
 ## Run Locally
 
-Requires Node.js 22.18 or later, Python 3, a C/C++ build toolchain, and the Yarn
-version checked into this repo.
-Run commands from the repository root.
+Use Node.js 24.22.1, pinned in [.nvmrc](.nvmrc) and the production Dockerfile,
+plus Python 3 and a C/C++ build toolchain for native dependencies. The root
+manifest declares Node.js >=22.18.0; the sync server requires >=22.19.0.
+Yarn 4.17.1 is checked into this repo. Run commands from the repository root.
 
 ```sh
 yarn install --immutable
+yarn prepare
 yarn start:server-dev
 ```
 
@@ -26,7 +28,7 @@ to try the app with sample data. For a production build:
 
 ```sh
 yarn build:server
-yarn start:server
+NODE_ENV=production yarn start:server
 ```
 
 ## Self-Host
@@ -36,8 +38,9 @@ docker compose build
 docker compose up -d
 ```
 
-The server listens on local port 5006 and persists data in the `actual-data`
-Docker volume. Configure HTTPS through your reverse proxy for other devices.
+Compose binds the server to `127.0.0.1:5006` and persists data in its
+`actual-data` named volume (Docker normally prefixes the name with the Compose
+project name). Configure HTTPS through your reverse proxy for other devices.
 See [MAINTENANCE.md](MAINTENANCE.md) for deployment, authentication, backups,
 restore, testing, and selective upstream imports.
 
@@ -47,12 +50,25 @@ restore, testing, and selective upstream imports.
 yarn lint
 yarn typecheck
 yarn test
+yarn build:browser
 E2E_USE_BUILD=1 yarn e2e
 ```
 
 Builds use local translation files and never download source repositories.
 All publishing and deployment are manual. GitHub and remote service operations
 are outside this checkout's workflow.
+
+## Documentation
+
+- [Maintenance](MAINTENANCE.md): builds, authentication, backups, recovery, and local upstream imports.
+- [Web client](packages/desktop-client/README.md): browser development, functional tests, and Docker screenshot tests.
+- [Sync server](packages/sync-server/README.md): server commands, configuration, and data paths.
+- [API](packages/api/README.md) and [CLI](packages/cli/README.md): integrations built from this fork.
+- [CRDT](packages/crdt/README.md) and [budget migrations](packages/loot-core/migrations/README.md): sync format and database compatibility.
+- [Client connection](packages/loot-core/src/platform/client/connection/README.md) and [backend connection](packages/loot-core/src/platform/server/connection/README.md): browser worker and Node/API messaging.
+- [GoCardless adapters](packages/sync-server/src/app-gocardless/README.md): bank normalization and local tests.
+- [Product](PRODUCT.md), [design](DESIGN.md), and [review guidelines](CODE_REVIEW_GUIDELINES.md): scope and development conventions.
+- [Agent instructions](AGENTS.md), [Claude entrypoint](CLAUDE.md), and [VRT skill](.claude/skills/running-vrts/SKILL.md): local agent workflow.
 
 ## License
 

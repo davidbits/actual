@@ -6,11 +6,13 @@ product
 
 ## Users
 
-The owner of this personal fork, managing spending, payments, and on/off-budget accounts across browser devices. They use Actual regularly (often daily or weekly check-ins) on desktop and mobile, mid-workflow: reconciling accounts, categorizing transactions, adjusting envelope budgets, reviewing reports. Many migrated from other budgeting apps and value that Actual is local-first, free, and open-source.
+The owner of this personal fork, managing spending, payments, and on/off-budget accounts across desktop and mobile browsers. Core workflows are reconciling accounts, categorizing transactions, adjusting budgets, and reviewing reports. The app is self-hosted, with local browser storage and device sync.
 
 ## Product Purpose
 
-Actual Budget is a local-first personal finance tool built around envelope budgeting. It exists so people can track and plan their money without handing data to a third party — everything runs on their own device or server, with optional sync. Success looks like users trusting the numbers, completing routine money tasks quickly, and sticking with their budget over months and years.
+This fork retains Actual's financial tools: accounts, transactions, payments, budgets, imports, bank sync, schedules, rules, reconciliation, and reports. The API and CLI remain available for integrations. Native apps, sharing, user management, tours, release news, and app plugin scaffolding are removed.
+
+Budget storage and processing run in the browser or local integration process, with a self-hosted sync server. Optional bank connections and OpenID authentication communicate with their configured external providers. Selecting a repository-based custom theme can download CSS and font assets from GitHub. Success means trustworthy balances, fast routine tasks, and reliable synchronization between the owner's devices.
 
 ## Brand Personality
 
@@ -31,4 +33,4 @@ Calm, trustworthy, practical. The interface should feel like a dependable tool t
 
 ## Accessibility & Inclusion
 
-Target WCAG 2.1 AA: sufficient contrast in all themes (light, dark, midnight), full keyboard navigation, respect for reduced-motion preferences, and color-blind-safe use of color (never color alone to convey positive/negative amounts).
+Design target: WCAG 2.1 AA, including sufficient contrast, keyboard navigation, reduced-motion support, and meaning conveyed beyond color. This is a review target, not a claim that every screen has been audited for conformance. Check built-in light, dark, and midnight themes and relevant custom-theme behavior.

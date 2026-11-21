@@ -1,3 +1,5 @@
+# Legacy packaging recipe: expects prebuilt workspaces supplied separately.
+# Personal-fork builds use the root sync-server.Dockerfile instead.
 FROM alpine:3.23 AS builder
 
 # Install required packages

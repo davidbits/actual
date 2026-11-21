@@ -21,7 +21,7 @@ type BreakpointsPx = {
 // Provide the same breakpoints in a form usable by CSS media queries
 // {
 //   breakpoint_small: '512px',
-//   breakpoint_medium: '740px',
+//   breakpoint_medium: '730px',
 //   breakpoint_wide: '1100px',
 // }
 export const tokens: BreakpointsPx = Object.entries(

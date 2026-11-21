@@ -1,3 +1,5 @@
+# Legacy packaging recipe: expects prebuilt workspaces supplied separately.
+# Personal-fork builds use the root sync-server.Dockerfile instead.
 FROM node:24.22.1-bookworm AS builder
 
 # Install required packages

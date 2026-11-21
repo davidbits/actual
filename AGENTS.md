@@ -18,10 +18,15 @@ Run every Yarn command from the repository root:
 - `yarn start`: browser development server, port 3001.
 - `yarn start:server-dev`: browser plus local sync server, port 5006.
 - `yarn build:server`: production browser and server build.
+- `NODE_ENV=production yarn start:server`: rebuild and run the sync server with the built browser app.
 - `yarn build:api` and `yarn build:cli`: retained integration packages.
 - `yarn lint`, `yarn typecheck`, `yarn test`: required checks.
-- `E2E_USE_BUILD=1 yarn e2e`: browser tests using the production build.
+- `E2E_USE_BUILD=1 yarn e2e`: browser tests after `yarn build:browser`; Playwright starts the local static test server.
 - `YARN_ENABLE_NETWORK=0 yarn install --immutable`: install from local cache.
+
+Use the Node version in `.nvmrc` and the vendored Yarn release. Run
+`yarn prepare` after installation to configure Git hooks; install scripts are
+disabled by default in `.yarnrc.yml`.
 
 Builds consume local translation files; never add implicit repository downloads.
 Use the demo budget for browser checks. Test device sync against a temporary
@@ -52,4 +57,6 @@ Run functional tests first; scope updates to affected files and test names and
 verify again without updates. Never regenerate all snapshots speculatively or
 request remote screenshot generation.
 
-See MAINTENANCE.md for deployment, backups, recovery, and local upstream imports.
+See [MAINTENANCE.md](MAINTENANCE.md) for deployment, backups, recovery, and local
+upstream imports. Package names retain upstream paths: `desktop-client` is the
+web app, and `eslint-plugin-actual` / `vite-plugin-peggy` are build tools.

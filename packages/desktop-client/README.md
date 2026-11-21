@@ -1,98 +1,87 @@
-Actual on the web
+# Actual Web Client
 
-## E2E tests
+`@actual-app/web` is the browser UI, including mobile browser layouts. The
+`desktop-client` directory name is retained for compatibility with local
+upstream imports; native desktop and mobile apps are absent.
 
-E2E (end-to-end) tests use [Playwright](https://playwright.dev/). Running them requires an Actual server to be running either locally or on a remote server.
+Run every Yarn command from the repository root. See the
+[root README](../../README.md) for prerequisites.
 
-### Functional
-
-Running against the local server:
+## Development and Builds
 
 ```sh
-# Start the development server
 yarn start
-
-# Run against the local server (localhost:3001)
-yarn e2e
 ```
 
-Running against a remote server:
+Vite serves the browser app on port 3001. For browser development through the
+local sync server on port 5006, use `yarn start:server-dev` instead.
+Use **Try the demo** for sample data.
+
+`yarn build:browser` writes `packages/desktop-client/build`. It consumes local
+translations from `packages/desktop-client/locale/` when present; English is
+built in. `yarn build:server` builds both this bundle and the sync server.
+
+## Functional Browser Tests
 
 ```sh
-E2E_START_URL=http://my-remote-server.com yarn e2e
+yarn build:browser
+E2E_USE_BUILD=1 yarn e2e
 ```
 
-### Visual regression
+Playwright starts the local static server itself. Without `E2E_USE_BUILD`,
+`yarn e2e` starts the Vite development server. Both default to
+`http://localhost:3001`; non-CI runs may reuse an already running server.
+Stop an old dev server when checking a freshly built bundle.
 
-Visual regression tests (also known as screenshot tests) check that the visual appearance of the product has not regressed. Each environment has slightly different colors, fonts etc. Mac differs from Windows which differs from Linux. In order to have a stable test environment for visual comparisons - you must use a standartised docker container. This ensures that the tests are always ran in a consistent environment.
-
-Prerequisites:
-
-- Docker installed
-
-#### Running against the local server
-
-First start a dev instance:
+To run a selected test:
 
 ```sh
-HTTPS=true yarn start
+E2E_USE_BUILD=1 yarn e2e e2e/transactions.test.ts -g 'filters transactions by date range'
 ```
 
-or using the dev container:
+Chromium must already be available in Playwright's local browser cache, or run
+inside the pinned Playwright image below. `E2E_START_URL` targets an existing
+local test server and disables automatic server startup. `E2E_PORT` changes the
+production test server's port; the development script fixes its port at 3001.
+`E2E_WORKERS` controls worker count. Keep tests on demo data and local servers.
 
-```
-HTTPS=true docker compose up --build
-```
+Ordinary functional runs skip `toMatchThemeScreenshots()` assertions. Use
+separate temporary server data for device-sync checks; the static browser test
+server is not a sync server.
 
-Note the network IP address and port the dev instance is listening on.
+## Visual Regression Tests
 
-Next, navigate to the root of your project folder, run the standardized docker container, and launch the visual regression tests from within it.
+Screenshot comparisons and updates use the pinned Linux Playwright Docker
+image, `mcr.microsoft.com/playwright:v1.61.1-jammy`, matching
+`@playwright/test` in [package.json](package.json) and [bin/run-vrt](../../bin/run-vrt).
+Have this image and the dependencies cached locally first. Do not generate
+snapshots on the host or request remote screenshot generation.
 
-Run via yarn:
+After the selected functional test passes, run the same test in Docker. This
+example starts the built app inside the container; loopback HTTP is sufficient
+and no external network is needed:
 
 ```sh
-# By default, this connects to https://localhost:3001
-yarn vrt:docker
-
-    # To use a different ip and port:
-    yarn vrt:docker --e2e-start-url https://ip:port
-
-    # To update snapshots, use the following command:
-    yarn vrt:docker --e2e-start-url https://ip:port --update-snapshots
+docker run --rm --pull=never --network none \
+  -v "$(pwd)":/work -w /work \
+  -e YARN_ENABLE_NETWORK=0 -e E2E_USE_BUILD=1 \
+  mcr.microsoft.com/playwright:v1.61.1-jammy \
+  /bin/bash -c "yarn vrt e2e/transactions.test.ts -g 'filters transactions by date range'"
 ```
 
-Run manually:
+For an intended visual change, add `--update-snapshots` to that **scoped** test
+command, inspect the changed PNGs, then rerun without the update flag. Never
+refresh the whole suite speculatively. Each matcher captures `auto`, `dark`,
+and `midnight`; the default `auto` appearance is light unless the test changes
+the preferred color scheme. Committed snapshots end in `-chromium-linux.png`.
 
-```sh
-# Run docker container
-docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.61.1-jammy /bin/bash
+For an interactive Linux terminal, `yarn vrt:docker` wraps Docker with
+`--network host` and `-it`. It expects an already running server and defaults
+to `https://localhost:3001`. Override with `--e2e-start-url` for another local
+test URL. Use the direct Docker command above in noninteractive agent shells.
+Use HTTPS when a browser accesses a non-loopback host.
 
-    # If you receive an error such as "docker: invalid reference format", please instead use the following command:
-    docker run --rm --network host -v ${pwd}:/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.61.1-jammy /bin/bash
-
-# Once inside the docker container, run the VRT tests: important - they MUST be ran against a HTTPS server.
-# Use the ip and port noted earlier
-E2E_START_URL=https://ip:port yarn vrt
-
-    # To update snapshots, use the following command:
-    E2E_START_URL=https://ip:port yarn vrt --update-snapshots
-```
-
-#### Running against a remote server
-
-You can also run the tests against a remote server by passing the URL:
-
-Run in standardized docker container:
-
-```sh
-E2E_START_URL=https://my-remote-server.com yarn vrt:docker
-
-    # Or pass in server URL as argument
-    yarn vrt:docker --e2e-start-url https://my-remote-server.com
-```
-
-Run locally:
-
-```sh
-E2E_START_URL=https://my-remote-server.com yarn vrt
-```
+The matcher and test setup live in [e2e/fixtures.ts](e2e/fixtures.ts).
+[playwright.config.ts](playwright.config.ts) sets screenshot tolerance to
+`maxDiffPixels: 5` and `threshold: 0.05`. Agent-specific instructions are in
+the [VRT skill](../../.claude/skills/running-vrts/SKILL.md).

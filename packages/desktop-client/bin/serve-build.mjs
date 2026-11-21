@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Minimal static file server for the prebuilt browser bundle at
 // packages/desktop-client/build. Serves with the COOP/COEP headers required
-// by the app (SharedArrayBuffer/SQLite). Intended for CI e2e runs where
+// by the app (SharedArrayBuffer/SQLite). Used for local production-build tests where
 // starting the full Vite dev server is unnecessary overhead.
 
 import fs from 'node:fs';

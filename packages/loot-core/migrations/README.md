@@ -4,11 +4,26 @@ Actual upgrades local budget databases by running the SQL and JavaScript files i
 
 ## Cross-version sync
 
-Actual supports running different app versions against the same synced budget. A device on an older release may still receive sync messages produced by a newer release, and it must keep loading and syncing until it upgrades.
+The retained migration and sync code tolerates certain additive changes from
+newer clients. This is a compatibility mechanism, not a guarantee that any two
+versions can safely share a budget. Run the same fork version across devices;
+preserve compatibility when importing upstream migrations.
 
 That only works if newer migrations are **additive-only**: they may extend the schema, but must not remove or rename anything an older client still reads or writes through sync.
 
-Post-cutoff migrations (ids after `1780606215001`, see `ADDITIVE_ONLY_CUTOFF` in `src/server/migrate/migrations.ts`) are enforced by `src/server/migrate/additive-migrations.test.ts`. CI runs that test against the real migration chain.
+Post-cutoff migrations (ids after `1780606215001`, see `ADDITIVE_ONLY_CUTOFF` in
+[migrations.ts](../src/server/migrate/migrations.ts)) are checked by
+[additive-migrations.test.ts](../src/server/migrate/additive-migrations.test.ts)
+against the real migration chain. Run the check locally from the repository
+root; this fork has no hosted CI workflow:
+
+```sh
+yarn workspace @actual-app/core test:node src/server/migrate/additive-migrations.test.ts
+```
+
+This directory contains **budget database** migrations. The sync server's
+account database uses a separate chain under
+[packages/sync-server/migrations](../../sync-server/migrations).
 
 ## Allowed changes
 
@@ -33,8 +48,16 @@ Renaming is not supported even via `ALTER TABLE ... RENAME`. Older clients addre
 ## Migration ids
 
 - Use a current timestamp for new migrations. Do not reuse or backdate ids into the pre-cutoff era.
-- A long-lived branch may merge after other migrations landed on `master`. If your migration id sorts below ids already on `master`, bump it to a new timestamp before merge so existing databases do not treat it as already applied.
-- If you must change a migration that has already shipped, prefer a new migration file rather than editing the old one. If you renumber an id, make the SQL idempotent (`IF NOT EXISTS`, and so on).
+- Keep migration IDs unique when importing changes. Post-cutoff migrations
+  are selected by unapplied ID, so an interleaved ID can still run; it is not
+  skipped merely because a higher ID has already run. Check dependencies
+  against databases that have already applied other migrations.
+- Preserve IDs and contents of migrations already used by this fork or its
+  synced devices. Prefer a new corrective migration to rewriting history.
+  If an unshipped migration must be renumbered, check dependency order and
+  make repeated SQL safe where appropriate.
+- JavaScript migrations also need registration in `javascriptMigrations` in
+  [migrations.ts](../src/server/migrate/migrations.ts) for bundled execution.
 
 ## What the test does not cover
 
@@ -42,4 +65,5 @@ Renaming is not supported even via `ALTER TABLE ... RENAME`. Older clients addre
 
 A data migration that changes the meaning or format of values already stored in a column can pass the test but still confuse an older app version reading those rows or applying sync messages. Prefer leaving existing values as-is, or gate behavioral changes on the app version reading them.
 
-For sync **values** (not just columns) from newer clients, see deferred message handling in `src/server/sync/` and `messages_pending`.
+For sync **values** from newer clients, see deferred message handling in
+[src/server/sync](../src/server/sync) and the `messages_pending` table.

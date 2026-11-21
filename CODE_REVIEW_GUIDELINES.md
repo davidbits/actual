@@ -17,7 +17,10 @@ Actual Budget follows a design philosophy that prioritizes simplicity and avoids
 
 **Do NOT approve code that adds new `@ts-strict-ignore` comments.**
 
-The project uses strict TypeScript checking via `typescript-strict-plugin`. Adding `@ts-strict-ignore` comments undermines type safety. Instead, review should encourage:
+`yarn typecheck` runs the native TypeScript compiler (`tsgo`) and workspace
+checks. Core, web, API, and sync-server checks also run `tsc-strict` from
+`typescript-strict-plugin`; legacy files may already opt out. New files must
+remain strict. Review should encourage:
 
 - Fixing the underlying type issue
 - Using proper type definitions
@@ -32,38 +35,44 @@ Linter rules are in place for good reasons. Instead of suppressing them:
 
 - Fix the underlying issue
 - If the rule is incorrectly flagging valid code, consider if the code can be refactored
-- Only approve suppressions if there's a documented, exceptional reason
+- Follow the fork rule in `AGENTS.md`: do not add new lint suppressions
 
 ## Type Assertions
 
-**Prefer `x satisfies SomeType` over `x as SomeType` for type coercions.**
+**Use `satisfies` to check an expression against a type without replacing its inferred type.**
 
 The `satisfies` operator provides better type safety by:
 
-- Ensuring the value actually satisfies the type (narrowing)
+- Checking assignability at compile time
 - Preserving the actual type information for better inference
 - Catching type mismatches at compile time
 
-**Exception:** If you truly need to assert a type that TypeScript cannot verify (e.g., runtime type guards), use `as` but require a comment explaining why it's safe.
+`satisfies` does not coerce values, validate runtime input, or replace a runtime
+type guard. Narrow untrusted values with checks. If an assertion is still
+necessary, explain the invariant that makes it safe.
 
-## Avoiding `any` and `unknown`
+## Untrusted Values and `any`
 
-**Flag code that uses `any` or `unknown` unless absolutely necessary.**
+**Avoid `any`; use `unknown` for values that need runtime validation.**
 
-The use of `any` or `unknown` should be rare and well-justified. Before approving:
+For untyped input, errors, and parsed data, `unknown` preserves type checking
+until the value is narrowed. Before approving an `any` or unchecked assertion:
 
 - Require explicit justification for why the type cannot be determined
 - Suggest using proper type definitions or generics
 - Consider if the type can be narrowed or properly inferred
 - Look for existing type definitions in `packages/loot-core/src/types/`
 
-Only approve `any` or `unknown` if there's a documented, exceptional reason (e.g., interop with untyped external libraries, gradual migration).
+Use existing types or generics for known data, and check external values before
+using them. Keep unavoidable `any` at the narrowest interop boundary.
 
 ## Internationalization (i18n)
 
 **All user-facing strings must be translated.**
 
-The project has custom ESLint rules (`actual/no-untranslated-strings`) that enforce i18n usage, but reviewers should actively flag untranslated strings:
+Oxlint loads the local ESLint-compatible rules, including
+`actual/no-untranslated-strings`, from `packages/eslint-plugin-actual`.
+Reviewers should still flag untranslated application UI strings:
 
 - Use `Trans` component instead of `t()` function when possible
 - All text visible to users must use i18n functions

@@ -2,7 +2,7 @@ import type { Handlers } from '#types/handlers';
 import type { ServerEvents } from '#types/server-events';
 
 export declare function init(
-  channel: Window | number, // in electron the port number, in web the worker
+  channel: Window | number, // Browser backend channel; unused by the API adapter
   handlers: Handlers,
 ): void;
 export type Init = typeof init;

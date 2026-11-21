@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# See here for more information: https://github.com/actualbudget/actual/tree/master/packages/desktop-client#visual-regression
+# Local workflow and noninteractive commands: packages/desktop-client/README.md
 
 if [ ! -d "node_modules" ] || [ "$(ls -A node_modules)" = "" ]; then
     yarn

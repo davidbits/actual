@@ -1,197 +1,76 @@
-# Integration new bank
+# GoCardless Bank Adapters
 
-If the default bank integration does not work for you, you can integrate a new bank by following these steps.
+Adapters normalize differences in the provider's account, transaction, and
+balance payloads. [banks/integration-bank.ts](banks/integration-bank.ts) is the
+fallback for institutions without a custom adapter.
 
-1. Find the identifier of the bank which you want to integrate. Note: the reference sheet that previously contained bank identifiers no longer exists.
+## Add or Change an Adapter
 
-2. Launch frontend and backend server.
+1. Identify the institution ID from an existing synthetic provider fixture or
+   a separately obtained, sanitized example. Do not collect live financial
+   data or call external bank services for repository tests.
+2. Create a TypeScript module in `banks/` following the existing filename
+   pattern, such as `example_bank_0000.ts`. Export an object that spreads the
+   fallback and `satisfies IBank`; these adapters are objects, not classes.
+3. Put supported provider IDs in `institutionIds`. Override only methods that
+   need different behavior.
+4. Add synthetic cases under `banks/tests/`, including transaction dates,
+   booking/pending behavior, sorting, and balance handling where relevant.
+5. Run the GoCardless tests from the repository root:
 
-3. In the frontend, create a new linked account selecting the institution which you are interested in.
+   ```sh
+   yarn workspace @actual-app/sync-server test src/app-gocardless
+   ```
 
-   This will trigger the process of fetching the data from the bank and will log the data in the backend. Use this data to fill the logic of the bank class.
+[bank-factory.ts](bank-factory.ts) discovers `./banks/*_*.{ts,js}` eagerly via
+Vite's `import.meta.glob`. A new adapter needs a matching filename and default
+export; there is no manual registration list. Factory tests check discovery
+and institution IDs.
 
-4. Create new a bank class based on an existing example in `app-gocardless/banks`.
+## Adapter Contract
 
-   Name of the file and class should follow the existing patterns and be created based on the ID of the integrated institution, found in step 1.
+[banks/bank.interface.ts](banks/bank.interface.ts) defines `IBank`:
 
-5. Fill the logic of `normalizeAccount`, `normalizeTransaction`, `sortTransactions`, and `calculateStartingBalance` functions.
-   You do not need to fill every function, only those which are necessary for the integration to work.
+| Method                                                          | Result                                             |
+| --------------------------------------------------------------- | -------------------------------------------------- |
+| `normalizeAccount(account)`                                     | Normalized account details for the client          |
+| `normalizeTransaction(transaction, booked, editedTransaction?)` | A normalized transaction, or `null` to omit it     |
+| `sortTransactions(transactions)`                                | Transactions ordered newest first                  |
+| `calculateStartingBalance(sortedTransactions, balances)`        | Integer amount preceding the supplied transactions |
 
-   You should do it based on the data which you found in the logs.
+For examples, see [mbank_retail_brexplpw.ts](banks/mbank_retail_brexplpw.ts)
+and its [tests](banks/tests/mbank_retail_brexplpw.spec.ts). The provider types
+are in [gocardless-node.types.ts](gocardless-node.types.ts).
 
-   Example logs which help you to fill:
-   - `normalizeAccount` function:
+## Transaction Overrides
 
-     ```log
-     Available account properties for new institution integration {
-       account: '{
-         "iban": "PL00000000000000000987654321",
-         "currency": "PLN",
-         "ownerName": "John Example",
-         "displayName": "Product name",
-         "product": "Daily account",
-         "usage": "PRIV",
-         "ownerAddressUnstructured": [
-           "POL",
-           "UL. Example 1",
-           "00-000 Warsaw"
-         ],
-         "id": "XXXXXXXX-XXXX-XXXXX-XXXXXX-XXXXXXXXX",
-         "created": "2023-01-18T12:15:16.502446Z",
-         "last_accessed": null,
-         "institution_id": "MBANK_RETAIL_BREXPLPW",
-         "status": "READY",
-         "owner_name": "",
-         "institution": {
-           "id": "MBANK_RETAIL_BREXPLPW",
-           "name": "mBank Retail",
-           "bic": "BREXPLPW",
-           "transaction_total_days": "90",
-           "countries": [
-             "PL"
-           ],
-           "logo": "https://cdn.nordigen.com/ais/MBANK_RETAIL_BREXCZPP.png",
-           "supported_payments": {},
-           "supported_features": [
-             "access_scopes",
-             "business_accounts",
-             "card_accounts",
-             "corporate_accounts",
-             "pending_transactions",
-             "private_accounts"
-           ]
-         }
-       }'
-     }
-     ```
+Keep raw provider fields available for client-side mapping. To customize the
+normalized date, payee name, or notes, create a shallow edited copy and pass it
+as the third argument to the fallback. For example:
 
-   - `sortTransactions` function:
-
-     ```log
-     Available (first 10) transactions properties for new integration of institution in sortTransactions function
-     {
-       top10SortedTransactions: '[
-         {
-           "transactionId": "20220101001",
-           "bookingDate": "2022-01-01",
-           "valueDate": "2022-01-01",
-           "transactionAmount": {
-             "amount": "5.01",
-             "currency": "EUR"
-           },
-           "creditorName": "JOHN EXAMPLE",
-           "creditorAccount": {
-             "iban": "PL00000000000000000987654321"
-           },
-           "debtorName": "CHRIS EXAMPLE",
-           "debtorAccount": {
-             "iban": "PL12345000000000000987654321"
-           },
-           "remittanceInformationUnstructured": "TEST BANK TRANSFER",
-           "remittanceInformationUnstructuredArray": [
-             "TEST BANK TRANSFER"
-           ],
-           "balanceAfterTransaction": {
-             "balanceAmount": {
-               "amount": "448.52",
-               "currency": "EUR"
-             },
-             "balanceType": "interimBooked"
-           },
-           "internalTransactionId": "casfib7720c2a02c0331cw2"
-         }
-       ]'
-     }
-     ```
-
-   - `calculateStartingBalance` function:
-
-     ```log
-     Available (first 10) transactions properties for new integration of institution in calculateStartingBalance function {
-       balances: '[
-         {
-           "balanceAmount": {
-             "amount": "448.52",
-             "currency": "EUR"
-           },
-           "balanceType": "forwardAvailable"
-         },
-         {
-           "balanceAmount": {
-             "amount": "448.52",
-             "currency": "EUR"
-           },
-           "balanceType": "interimBooked"
-         }
-       ]',
-         top10SortedTransactions: '[
-         {
-           "transactionId": "20220101001",
-           "bookingDate": "2022-01-01",
-           "valueDate": "2022-01-01",
-           "transactionAmount": {
-             "amount": "5.01",
-             "currency": "EUR"
-           },
-           "creditorName": "JOHN EXAMPLE",
-           "creditorAccount": {
-             "iban": "PL00000000000000000987654321"
-           },
-           "debtorName": "CHRIS EXAMPLE",
-           "debtorAccount": {
-             "iban": "PL12345000000000000987654321"
-           },
-           "remittanceInformationUnstructured": "TEST BANK TRANSFER",
-           "remittanceInformationUnstructuredArray": [
-             "TEST BANK TRANSFER"
-           ],
-           "balanceAfterTransaction": {
-             "balanceAmount": {
-               "amount": "448.52",
-               "currency": "EUR"
-             },
-             "balanceType": "interimBooked"
-           },
-           "internalTransactionId": "casfib7720c2a02c0331cw2"
-         }
-       ]'
-     }
-     ```
-
-6. Add new bank integration to `BankFactory` class in file `actual-server/app-gocardless/bank-factory.js`
-
-7. Remember to add tests for new bank integration in
-
-## normalizeTransaction
-
-This is the most commonly used override as it allows you to change the data that is returned to the client.
-
-Please follow the following patterns when implementing a custom normalizeTransaction method:
-
-1. If you need to edit the values of transaction fields (excluding the transaction amount) do not mutate the original transaction object. Instead, create a shallow copy and make your changes there.
-2. End the function by returning the result of calling the fallback normalizeTransaction method from integration-bank.js
-
-E.g.
-
-```js
+```ts
+import type { IBank } from './bank.interface';
 import Fallback from './integration-bank';
 
 export default {
-  ...
+  ...Fallback,
+  institutionIds: ['EXAMPLE_BANK_0000'],
 
   normalizeTransaction(transaction, booked) {
-    // create a shallow copy of the transaction object
-    const editedTrans = { ...transaction };
-
-    // make any changes required to the copy
-    editedTrans.remittanceInformationUnstructured = transaction.remittanceInformationStructured;
-
-    // call the fallback method, passing in your edited transaction as the 3rd parameter
-    // this will calculate the date, payee name and notes fields based on your changes
-    // but leave the original fields available for mapping in the UI
-    return Fallback.normalizeTransaction(transaction, booked, editedTrans);
-  }
-
-  ...
-}
+    const edited = {
+      ...transaction,
+      notes:
+        transaction.remittanceInformationStructured ??
+        transaction.remittanceInformationUnstructured,
+    };
+    return Fallback.normalizeTransaction(transaction, booked, edited);
+  },
+} satisfies IBank;
 ```
+
+The fallback returns `null` when no usable date is present. It computes
+normalized fields while retaining raw fields and derived remittance strings.
+Check [integration-bank.ts](banks/integration-bank.ts) before relying on its
+balance preference order or date selection. Financial conversions use
+`amountToInteger` from [utils.ts](utils.ts); tests should verify amounts as
+well as labels.
