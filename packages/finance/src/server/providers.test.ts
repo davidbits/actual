@@ -15,6 +15,49 @@ const options = {
 };
 
 describe('provider account and paging contracts', () => {
+  it('reads Bitget savings assets and preserves reward and redemption signs', async () => {
+    const adapter = bitget.create({
+      request: async resource => {
+        if (resource.path === '/api/v3/account/info') {
+          throw new ProviderError('40084', 400);
+        }
+        if (resource.path === '/api/v2/spot/account/info') return { data: {} };
+        if (resource.path.endsWith('/savings/assets')) {
+          return {
+            data: { resultList: [{ productCoin: 'BTC', holdAmount: '0.001' }] },
+          };
+        }
+        if (resource.path.endsWith('/savings/records')) {
+          return {
+            data: {
+              resultList: [
+                'subscribe',
+                'redeem',
+                'pay_interest',
+                'deduction',
+              ].map((type, i) => ({
+                orderId: String(i),
+                orderType: type,
+                coinName: 'BTC',
+                settleCoinName: 'BTC',
+                amount: '0.00001',
+                ts: '1',
+              })),
+            },
+          };
+        }
+        throw new ProviderError('unavailable', 403);
+      },
+    });
+    const data = await adapter.collect(options);
+    expect(data.holdings.map(h => h.asset)).toEqual(['BTC', 'BTC']);
+    expect(data.events.slice(0, 4).map(e => e.postings[0].quantity)).toEqual([
+      '0.00001',
+      '-0.00001',
+      '0.00001',
+      '-0.00001',
+    ]);
+  });
   it('discovers sold Binance symbols and preserves the three legs of spot fills', async () => {
     const adapter = binance.create({
       request: async (resource, params) => {

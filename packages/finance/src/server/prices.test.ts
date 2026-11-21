@@ -59,3 +59,24 @@ it('derives fiat cross rates from the same dated ECB observation', async () => {
     await ecbPrices(['USD'], Date.parse('2025-01-01'), true, fetcher),
   ).toEqual([]);
 });
+
+it('keeps local quotes when the cross-rate source fails', async () => {
+  const fetcher = vi.fn<typeof fetch>(async url =>
+    String(url).includes('luno')
+      ? new Response(
+          JSON.stringify({
+            tickers: [
+              { pair: 'USDTZAR', last_trade: '18', timestamp: 100 },
+              { pair: 'XBTZAR', last_trade: '1000000', timestamp: 100 },
+            ],
+          }),
+        )
+      : new Response('{}', { status: 503 }),
+  );
+  const prices = await createPriceSource(fetcher).current(
+    ['BTC', 'ETH'],
+    'ZAR',
+  );
+  expect(prices.find(p => p.asset === 'BTC')?.price).toBe('1000000');
+  expect(prices.find(p => p.asset === 'ETH')).toBeUndefined();
+});

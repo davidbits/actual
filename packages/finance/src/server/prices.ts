@@ -39,9 +39,14 @@ export function createPriceSource(fetcher = globalThis.fetch): PriceSource {
     async current(assets, quote) {
       if (quote !== 'ZAR') throw new Error('No configured quote source');
       const now = Date.now();
-      const rows = array(
-        object(await get('https://api.luno.com/api/1/tickers')).tickers,
-      );
+      let rows: Record<string, unknown>[] = [];
+      try {
+        rows = array(
+          object(await get('https://api.luno.com/api/1/tickers')).tickers,
+        );
+      } catch {
+        /* Fiat FX remains available when the crypto price source is down. */
+      }
       const direct = new Map<string, Price>();
       for (const row of rows) {
         const pair = string(row.pair);
@@ -64,9 +69,13 @@ export function createPriceSource(fetcher = globalThis.fetch): PriceSource {
       const usdt = direct.get('USDT');
       let binancePrices: Record<string, unknown>[] = [];
       if (usdt && assets.some(a => a !== 'ZAR' && !direct.has(a))) {
-        binancePrices = array(
-          await get('https://api.binance.com/api/v3/ticker/price'),
-        );
+        try {
+          binancePrices = array(
+            await get('https://api.binance.com/api/v3/ticker/price'),
+          );
+        } catch {
+          /* A cross-rate source outage must not discard successful local quotes. */
+        }
       }
       for (const asset of new Set(assets)) {
         const local = direct.get(asset);
