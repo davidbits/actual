@@ -10,6 +10,7 @@ import { registerQueryCommand } from './commands/query';
 import { registerRulesCommand } from './commands/rules';
 import { registerSchedulesCommand } from './commands/schedules';
 import { registerServerCommand } from './commands/server';
+import { registerStatementsCommand } from './commands/statements';
 import { registerSyncCommand } from './commands/sync';
 import { registerTagsCommand } from './commands/tags';
 import { registerTransactionsCommand } from './commands/transactions';
@@ -60,6 +61,7 @@ program
 
 registerAccountsCommand(program);
 registerFinanceCommand(program);
+registerStatementsCommand(program);
 registerBudgetsCommand(program);
 registerCategoriesCommand(program);
 registerCategoryGroupsCommand(program);

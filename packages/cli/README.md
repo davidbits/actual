@@ -27,6 +27,10 @@ The examples below use this Bash/Zsh alias for the local build:
 alias actual="node $(pwd)/packages/cli/dist/cli.js"
 ```
 
+Nedbank CSV exports can be inspected, converted and imported through
+`actual statements`. See the [statement ingestion guide](../finance/STATEMENTS.md)
+for supported formats, balance checks, previews and repeat-import behavior.
+
 ## Quick Start
 
 ```bash
