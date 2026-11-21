@@ -11,6 +11,7 @@
     "build"
   ],
   "imports": {
+    "#finance/*": "./src/finance/*.ts",
     "#browser-preload": "./src/browser-preload.js",
     "#account-groups": "./src/account-groups/index.ts",
     "#accounts": "./src/accounts/index.ts",

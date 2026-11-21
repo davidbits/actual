@@ -202,6 +202,10 @@ export function FinancesApp() {
 
                   <Route path="/reports/*" element={<Reports />} />
                   <Route path="/portfolio" element={<PortfolioPage />} />
+                  <Route
+                    path="/portfolio/:connectionId"
+                    element={<PortfolioPage />}
+                  />
 
                   <Route
                     path="/budget"

@@ -31,6 +31,7 @@ import { makeAmountFullStyle } from '#components/budget/util';
 import { MOBILE_NAV_HEIGHT } from '#components/mobile/MobileNavTabs';
 import { PullToRefresh } from '#components/mobile/PullToRefresh';
 import { MobilePageHeader, Page } from '#components/Page';
+import { ExchangeAccounts } from '#components/portfolio/ExchangeAccounts';
 import { CellValue, CellValueText } from '#components/spreadsheet/CellValue';
 import { useAccounts } from '#hooks/useAccounts';
 import { useLocalPref } from '#hooks/useLocalPref';
@@ -353,7 +354,10 @@ function AllAccountList({
       padding={0}
     >
       {accounts.length === 0 ? (
-        <EmptyMessage onAddAccount={onAddAccount} />
+        <View style={{ flex: 1 }}>
+          <ExchangeAccounts variant="mobile" />
+          <EmptyMessage onAddAccount={onAddAccount} />
+        </View>
       ) : (
         <PullToRefresh onRefresh={onSync}>
           <View
@@ -391,6 +395,7 @@ function AllAccountList({
               getAccountBalance={getAccountBalance}
               onOpenAccount={onOpenAccount}
             />
+            <ExchangeAccounts variant="mobile" />
             {closedAccounts.length > 0 && (
               <AccountHeader
                 id="closed"

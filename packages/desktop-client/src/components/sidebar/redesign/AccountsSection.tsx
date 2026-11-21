@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { spacing } from '@actual-app/components/tokens';
 import { View } from '@actual-app/components/view';
 
+import { ExchangeAccounts } from '#components/portfolio/ExchangeAccounts';
 import * as bindings from '#spreadsheet/bindings';
 
 import { AccountSearchField } from './AccountSearchField';
@@ -92,6 +93,7 @@ export function AccountsSection() {
             onToggleBucket={bucket => collapse.toggle(bucketKey('off', bucket))}
           />
         )}
+        <ExchangeAccounts variant="redesign" />
         <ClosedSection
           accounts={visibleTree.closed}
           isOpen={collapse.isOpen('closed')}

@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { Button } from '@actual-app/components/button';
+import { Input } from '@actual-app/components/input';
+import { Select } from '@actual-app/components/select';
+import { Text } from '@actual-app/components/text';
+import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
 import type { ConnectInput, ProviderDefinition } from '@actual-app/finance';
+import { css } from '@emotion/css';
+
+import { dateInputClassName, PortfolioField } from './PortfolioField';
 
 export function PortfolioConnectionForm({
   providers,
@@ -12,9 +19,10 @@ export function PortfolioConnectionForm({
 }: {
   providers: ProviderDefinition[];
   busy: boolean;
-  onConnect: (input: ConnectInput) => Promise<void>;
+  onConnect: (input: ConnectInput) => Promise<boolean>;
 }) {
   const { t } = useTranslation();
+  const prefix = useId();
   const [provider, setProvider] = useState('luno');
   const [name, setName] = useState('');
   const [key, setKey] = useState('');
@@ -22,135 +30,149 @@ export function PortfolioConnectionForm({
   const [passphrase, setPassphrase] = useState('');
   const [historyStart, setHistoryStart] = useState('2010-01-01');
   const [symbols, setSymbols] = useState('');
-  const [interval, setInterval] = useState(15);
+  const [interval, setInterval] = useState('15');
   return (
     <form
       onSubmit={async event => {
         event.preventDefault();
-        await onConnect({
+        const saved = await onConnect({
           provider,
           name:
             name || providers.find(p => p.id === provider)?.name || provider,
           credentials: { key, secret, passphrase: passphrase || undefined },
           enabled: true,
-          intervalMinutes: interval,
+          intervalMinutes: Number(interval),
           historyStart,
           symbols: symbols
             .split(/[\s,]+/)
             .map(s => s.trim().toUpperCase())
             .filter(Boolean),
         });
-        setKey('');
-        setSecret('');
-        setPassphrase('');
+        if (saved) {
+          setKey('');
+          setSecret('');
+          setPassphrase('');
+          setName('');
+        }
       }}
     >
-      <View style={{ gap: 12, maxWidth: 560 }}>
-        <h3>
+      <View style={{ gap: 16, maxWidth: 680 }}>
+        <Text style={{ fontSize: 16, fontWeight: 600 }}>
           <Trans>Connect an exchange</Trans>
-        </h3>
-        <label>
-          <Trans>Provider</Trans>
-          <select
-            aria-label={t('Provider')}
-            value={provider}
-            onChange={event => setProvider(event.target.value)}
-            style={{ marginLeft: 12 }}
-          >
-            {providers.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <Trans>Connection name</Trans>
-          <input
-            aria-label={t('Connection name')}
-            value={name}
-            onChange={event => setName(event.target.value)}
-          />
-        </label>
-        <label>
-          <Trans>API key</Trans>
-          <input
-            type="password"
-            autoComplete="off"
-            required
-            aria-label={t('API key')}
-            value={key}
-            onChange={event => setKey(event.target.value)}
-          />
-        </label>
-        <label>
-          <Trans>API secret</Trans>
-          <input
-            type="password"
-            autoComplete="off"
-            required
-            aria-label={t('API secret')}
-            value={secret}
-            onChange={event => setSecret(event.target.value)}
-          />
-        </label>
-        {providers.find(p => p.id === provider)?.passphrase && (
-          <label>
-            <Trans>API passphrase</Trans>
-            <input
+        </Text>
+        <View
+          className={css({
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: 16,
+            '@media (max-width: 650px)': { gridTemplateColumns: '1fr' },
+          })}
+        >
+          <PortfolioField id={prefix + 'provider'} label={t('Provider')}>
+            <Select
+              id={prefix + 'provider'}
+              options={providers.map(p => [p.id, p.name])}
+              value={provider}
+              onChange={setProvider}
+              disabled={busy || !providers.length}
+            />
+          </PortfolioField>
+          <PortfolioField id={prefix + 'name'} label={t('Connection name')}>
+            <Input
+              id={prefix + 'name'}
+              value={name}
+              onChangeValue={setName}
+              placeholder={t('Optional name')}
+            />
+          </PortfolioField>
+          <PortfolioField id={prefix + 'key'} label={t('API key')}>
+            <Input
+              id={prefix + 'key'}
               type="password"
               autoComplete="off"
               required
-              aria-label={t('API passphrase')}
-              value={passphrase}
-              onChange={event => setPassphrase(event.target.value)}
+              value={key}
+              onChangeValue={setKey}
             />
-          </label>
-        )}
-        <label>
-          <Trans>History start</Trans>
-          <input
-            type="date"
-            required
-            aria-label={t('History start')}
-            value={historyStart}
-            onChange={event => setHistoryStart(event.target.value)}
-          />
-        </label>
-        <label>
-          <Trans>Refresh interval in minutes</Trans>
-          <input
-            type="number"
-            min={5}
-            max={10080}
-            aria-label={t('Refresh interval in minutes')}
-            value={interval}
-            onChange={event => setInterval(Number(event.target.value))}
-          />
-        </label>
-        <label>
-          <Trans>Historical trading symbols</Trans>
-          <input
-            aria-label={t('Historical trading symbols')}
-            value={symbols}
-            onChange={event => setSymbols(event.target.value)}
-          />
-        </label>
-        <p>
+          </PortfolioField>
+          <PortfolioField id={prefix + 'secret'} label={t('API secret')}>
+            <Input
+              id={prefix + 'secret'}
+              type="password"
+              autoComplete="off"
+              required
+              value={secret}
+              onChangeValue={setSecret}
+            />
+          </PortfolioField>
+          {providers.find(p => p.id === provider)?.passphrase && (
+            <PortfolioField
+              id={prefix + 'passphrase'}
+              label={t('API passphrase')}
+            >
+              <Input
+                id={prefix + 'passphrase'}
+                type="password"
+                autoComplete="off"
+                required
+                value={passphrase}
+                onChangeValue={setPassphrase}
+              />
+            </PortfolioField>
+          )}
+          <PortfolioField id={prefix + 'history'} label={t('History start')}>
+            <Input
+              id={prefix + 'history'}
+              type="date"
+              className={dateInputClassName}
+              required
+              value={historyStart}
+              onChangeValue={setHistoryStart}
+            />
+          </PortfolioField>
+          <PortfolioField
+            id={prefix + 'interval'}
+            label={t('Refresh interval in minutes')}
+          >
+            <Input
+              id={prefix + 'interval'}
+              type="number"
+              min={5}
+              max={10080}
+              required
+              value={interval}
+              onChangeValue={setInterval}
+            />
+          </PortfolioField>
+          <PortfolioField
+            id={prefix + 'symbols'}
+            label={t('Historical trading symbols')}
+            hint={t(
+              'Optional pairs for symbol-specific history, including delisted markets.',
+            )}
+          >
+            <Input
+              id={prefix + 'symbols'}
+              value={symbols}
+              onChangeValue={setSymbols}
+            />
+          </PortfolioField>
+        </View>
+        <Text style={{ color: theme.pageTextSubdued, fontSize: 12 }}>
           <Trans>
-            Include sold and delisted trading pairs when collecting Binance
-            history. Each connection reports any unavailable or incomplete data.
+            Use a read-only API key. Credentials are stored encrypted on your
+            sync server.
           </Trans>
-        </p>
-        <p>
-          <Trans>
-            Credentials are stored encrypted on your sync server. Collection
-            continues while the browser is closed.
-          </Trans>
-        </p>
-        <Button type="submit" isDisabled={busy || !providers.length}>
-          <Trans>Save connection</Trans>
-        </Button>
+        </Text>
+        <View style={{ alignItems: 'flex-start' }}>
+          <Button
+            type="submit"
+            variant="primary"
+            isDisabled={busy || !providers.length}
+          >
+            <Trans>Save connection</Trans>
+          </Button>
+        </View>
       </View>
     </form>
   );

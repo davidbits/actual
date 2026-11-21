@@ -7,6 +7,7 @@ import type { AccountEntity } from '@actual-app/core/types/models';
 
 import { useMoveAccountMutation } from '#accounts';
 import { isAccountFailedSync } from '#accounts/syncStatus';
+import { ExchangeAccounts } from '#components/portfolio/ExchangeAccounts';
 import { useAccounts } from '#hooks/useAccounts';
 import { useClosedAccounts } from '#hooks/useClosedAccounts';
 import { useLocalPref } from '#hooks/useLocalPref';
@@ -163,6 +164,7 @@ export function Accounts() {
           />
         ))}
 
+        <ExchangeAccounts />
         {closedAccounts.length > 0 && (
           <SecondaryItem
             style={{ marginTop: 15 }}

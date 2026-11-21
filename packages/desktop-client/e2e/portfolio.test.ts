@@ -64,6 +64,7 @@ test('connects an exchange and keeps its portfolio available offline', async ({
   await page.clock.install({ time: new Date(at) });
   await page.route('https://sync.example.test/**', async route => {
     const path = new URL(route.request().url()).pathname;
+    if (!path.startsWith('/finance/')) return route.abort();
     if (path === '/finance/connect') {
       const body = route.request().postDataJSON();
       expect(body.credentials.key).toBe('synthetic-key');
@@ -98,6 +99,14 @@ test('connects an exchange and keeps its portfolio available offline', async ({
   });
   await new Navigation(page).goToBankSyncPage();
   await page.getByRole('button', { name: 'Exchange portfolio' }).click();
+  await expect(page.getByLabel('API key', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Save connection', exact: true }),
+  ).toBeEnabled();
+  await expect(page.getByText(/Something internally went wrong/)).toHaveCount(
+    0,
+  );
+  await expect(page).toMatchThemeScreenshots();
   await page
     .getByLabel('Connection name', { exact: true })
     .fill('Synthetic exchange');
@@ -107,13 +116,14 @@ test('connects an exchange and keeps its portfolio available offline', async ({
     .getByRole('button', { name: 'Save connection', exact: true })
     .click();
   await expect(
-    page.getByText('Synthetic exchange', { exact: true }),
+    page
+      .getByTestId('sidebar-exchange-accounts')
+      .getByText('Synthetic exchange', { exact: true }),
   ).toBeVisible();
   await expect(page.getByText('0.012345678', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('API secret', { exact: true })).toHaveValue('');
-  await expect(
-    page.getByRole('region', { name: 'Holdings', exact: true }),
-  ).toMatchThemeScreenshots();
+  await expect(page.getByLabel('API secret', { exact: true })).toHaveCount(0);
+  await expect(page).toMatchThemeScreenshots();
+  await page.getByRole('tab', { name: 'Activity', exact: true }).click();
   const activity = page.getByRole('region', {
     name: 'Exchange activity',
     exact: true,
@@ -121,7 +131,9 @@ test('connects an exchange and keeps its portfolio available offline', async ({
   await expect(
     activity.getByText('Synthetic movement 500', { exact: true }),
   ).toHaveCount(0);
-  await activity.getByRole('button', { name: 'Show more activity' }).click();
+  for (let i = 0; i < 5; i++) {
+    await activity.getByRole('button', { name: 'Show more activity' }).click();
+  }
   await expect(
     activity.getByText('Synthetic movement 500', { exact: true }),
   ).toBeVisible();
@@ -138,5 +150,8 @@ test('connects an exchange and keeps its portfolio available offline', async ({
   await expect(
     page.getByText('Server unavailable. Showing last saved portfolio.'),
   ).toBeVisible();
+  await expect(page.getByText(/Something internally went wrong/)).toHaveCount(
+    0,
+  );
   await page.close();
 });

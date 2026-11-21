@@ -1,308 +1,358 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components';
 import { Trans, useTranslation } from 'react-i18next';
+import { useParams } from 'react-router';
 
 import { Button } from '@actual-app/components/button';
+import { useResponsive } from '@actual-app/components/hooks/useResponsive';
+import { Input } from '@actual-app/components/input';
+import { Select } from '@actual-app/components/select';
+import { Text } from '@actual-app/components/text';
+import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
 import { send } from '@actual-app/core/platform/client/connection';
-import { emptyPortfolio } from '@actual-app/finance';
-import type {
-  ConnectInput,
-  Portfolio,
-  ProviderDefinition,
-} from '@actual-app/finance';
+import type { ConnectInput, Portfolio } from '@actual-app/finance';
+import { css } from '@emotion/css';
+import { useQueryClient } from '@tanstack/react-query';
 
-import { Page } from '#components/Page';
+import { MobileBackButton } from '#components/mobile/MobileBackButton';
+import { MobilePageHeader, Page } from '#components/Page';
+import { portfolioQuery, usePortfolio } from '#finance/queries';
+import { useNavigate } from '#hooks/useNavigate';
 
-import { PortfolioArchive } from './PortfolioArchive';
-import { PortfolioConnectionForm } from './PortfolioConnectionForm';
+import { PortfolioActivity } from './PortfolioActivity';
+import { PortfolioConnections } from './PortfolioConnections';
+import { dateInputClassName } from './PortfolioField';
 import { PortfolioHoldings } from './PortfolioHoldings';
 import { PortfolioPositions } from './PortfolioPositions';
 import { PortfolioPrices } from './PortfolioPrices';
+import { PortfolioSummary } from './PortfolioSummary';
 
 export function PortfolioPage() {
   const { t } = useTranslation();
-  const [portfolio, setPortfolio] = useState<Portfolio>(emptyPortfolio);
-  const [providers, setProviders] = useState<ProviderDefinition[]>([]);
+  const { isNarrowWidth } = useResponsive();
+  const navigate = useNavigate();
+  const { connectionId } = useParams<{ connectionId: string }>();
+  const {
+    portfolio: current,
+    offline,
+    budgetId,
+    isPending,
+    isFetching,
+    refetch,
+    providers,
+  } = usePortfolio();
+  const client = useQueryClient();
+  const [history, setHistory] = useState<{
+    portfolio: Portfolio;
+    at: number;
+  }>();
+  const [date, setDate] = useState('');
+  const [tab, setTab] = useState('holdings');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [date, setDate] = useState('');
-  const [at, setAt] = useState(() => Date.now());
-  const [eventLimit, setEventLimit] = useState(500);
+  const source = history?.portfolio ?? current;
+  const connections = source.connections.filter(
+    c => !connectionId || c.id === connectionId,
+  );
+  const collections = Object.fromEntries(
+    Object.entries(source.collections).filter(
+      ([id]) => !connectionId || id === connectionId,
+    ),
+  );
+  const assets = new Set([
+    ...Object.values(collections).flatMap(c => c.holdings.map(h => h.asset)),
+    'USD',
+    'USDT',
+    'ZAR',
+  ]);
+  const portfolio = {
+    ...source,
+    connections,
+    collections,
+    prices: source.prices.filter(p => assets.has(p.asset)),
+  };
+  const at = history?.at ?? current.updatedAt;
 
-  useEffect(() => {
-    let active = true;
-    void send('finance/get').then(data => {
-      if (active) setPortfolio(data);
-    });
-    void Promise.all([send('finance/pull'), send('finance/providers')])
-      .then(([data, definitions]) => {
-        if (active) {
-          setPortfolio(data);
-          setAt(Date.now());
-          setProviders(definitions);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setError(t('Server unavailable. Showing last saved portfolio.'));
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [t]);
-
-  async function run(action: () => Promise<Portfolio>, valuationAt?: number) {
+  async function run(
+    action: () => Promise<Portfolio>,
+    historicalAt?: number,
+  ): Promise<boolean> {
     setBusy(true);
     setError('');
     try {
-      setPortfolio(await action());
-      setAt(valuationAt ?? Date.now());
-      if (valuationAt === undefined) setDate('');
+      const result = await action();
+      if (historicalAt !== undefined) {
+        setHistory({ portfolio: result, at: historicalAt });
+      } else {
+        client.setQueryData(portfolioQuery(budgetId).queryKey, {
+          portfolio: result,
+          offline: false,
+          providers,
+        });
+        setHistory(undefined);
+        setDate('');
+      }
+      return true;
     } catch {
       setError(
         t(
           'Unable to complete request. Check connection settings and server status.',
         ),
       );
+      return false;
     } finally {
       setBusy(false);
     }
   }
-  async function connect(input: ConnectInput) {
-    await run(() => send('finance/connect', input));
-  }
-  const events = Object.entries(portfolio.collections)
-    .flatMap(([id, c]) => c.events.map(e => ({ ...e, connectionId: id })))
-    .sort((a, b) => b.timestamp - a.timestamp);
+  const onConnect = (input: ConnectInput) =>
+    run(() => send('finance/connect', input));
+  const tabs = [
+    ['holdings', t('Holdings')],
+    ['activity', t('Activity')],
+    ['positions', t('Positions')],
+    ['prices', t('Prices and rates')],
+    ['connections', t('Connections')],
+  ];
   return (
-    <Page header={t('Portfolio')}>
-      <View style={{ overflowY: 'auto', flex: 1 }}>
-        <View style={{ padding: 20, gap: 20, flexShrink: 0 }}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-            <Button
-              isDisabled={busy}
-              onPress={() => {
-                setDate('');
-                setAt(Date.now());
-                void run(() => send('finance/sync', {}));
-              }}
-            >
-              <Trans>Sync exchanges</Trans>
-            </Button>
-            <Button
-              isDisabled={busy}
-              onPress={() => {
-                setDate('');
-                setAt(Date.now());
-                void run(() => send('finance/pull'));
-              }}
-            >
-              <Trans>Refresh saved data</Trans>
-            </Button>
-            <label>
-              <Trans>Valuation date</Trans>
-              <input
-                aria-label={t('Valuation date')}
-                type="date"
-                value={date}
-                onChange={event => setDate(event.target.value)}
-              />
-            </label>
-            <Button
-              isDisabled={busy || !date}
-              onPress={() => {
-                const instant = Math.min(
-                  Date.now(),
-                  Date.parse(`${date}T23:59:59+02:00`),
-                );
-                setAt(instant);
-                void run(
-                  () => send('finance/history', { at: instant }),
-                  instant,
-                );
-              }}
-            >
-              <Trans>View history</Trans>
-            </Button>
-          </View>
-          {busy && (
-            <p role="status">
-              <Trans>Collecting exchange data…</Trans>
-            </p>
-          )}
-          {error && <p role="alert">{error}</p>}
-          {!!date && (
-            <p>
-              <Trans>
-                Historical values use saved holdings checkpoints and prices
-                available at the selected date. Dates without checkpoints remain
-                unavailable.
-              </Trans>
-            </p>
-          )}
-          <PortfolioHoldings portfolio={portfolio} at={at} />
-          <PortfolioPrices prices={portfolio.prices} at={at} />
-          <PortfolioPositions portfolio={portfolio} />
-          <section aria-label={t('Connections')}>
-            <h2>
-              <Trans>Connections</Trans>
-            </h2>
-            {portfolio.connections.map(connection => (
-              <View key={connection.id} style={{ paddingBottom: 16, gap: 8 }}>
-                <strong>{connection.name}</strong>
-                <span>
-                  {connection.lastSuccess
-                    ? new Date(connection.lastSuccess).toLocaleString()
-                    : t('Not yet synced')}
-                </span>
-                {connection.error && (
-                  <span role="status">{connection.error}</span>
-                )}
-                <Button
-                  isDisabled={busy}
-                  onPress={() =>
-                    void run(() => send('finance/sync', { id: connection.id }))
-                  }
-                >
-                  <Trans>Sync connection</Trans>
-                </Button>
-                <Button
-                  isDisabled={busy}
-                  onPress={() =>
-                    void run(() =>
-                      send('finance/remove', { id: connection.id }),
-                    )
-                  }
-                >
-                  <Trans>Disconnect and remove collected data</Trans>
-                </Button>
-                <Button
-                  isDisabled={busy}
-                  onPress={() =>
-                    void run(() =>
-                      send('finance/connect', {
-                        ...connection,
-                        enabled: !connection.enabled,
-                      }),
-                    )
-                  }
-                >
-                  {connection.enabled
-                    ? t('Pause automatic collection')
-                    : t('Resume automatic collection')}
-                </Button>
-                <PortfolioArchive
-                  id={connection.id}
-                  collection={portfolio.collections[connection.id]}
-                  prices={portfolio.prices}
-                  disabled={busy}
-                  onImport={async (id, document) => {
-                    await run(() => send('finance/import', { id, document }));
-                  }}
-                />
-                <details>
-                  <summary>
-                    <Trans>Data coverage</Trans>
-                  </summary>
-                  <ul>
-                    {portfolio.collections[connection.id]?.coverage.map(
-                      (coverage, index) => (
-                        <li key={index}>
-                          {coverage.stream}: {coverage.status}
-                          {coverage.reason ? ` — ${coverage.reason}` : ''}
-                        </li>
-                      ),
-                    )}
-                  </ul>
-                </details>
-              </View>
-            ))}
-            {!portfolio.connections.length && (
-              <p>
-                <Trans>
-                  Connect an exchange to collect holdings and activity.
-                </Trans>
-              </p>
-            )}
-          </section>
-          <PortfolioConnectionForm
-            providers={providers}
-            busy={busy}
-            onConnect={connect}
+    <Page
+      header={
+        isNarrowWidth ? (
+          <MobilePageHeader
+            title={
+              connectionId
+                ? (connections[0]?.name ?? t('Exchange portfolio'))
+                : t('Exchange portfolios')
+            }
+            leftContent={
+              <MobileBackButton onPress={() => void navigate('/accounts')} />
+            }
           />
-          <section aria-label={t('Exchange activity')}>
-            <h2>
-              <Trans>Exchange activity</Trans>
-            </h2>
-            <div style={{ overflowX: 'auto' }}>
-              <table
-                style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  borderSpacing: '12px 8px',
-                  fontVariantNumeric: 'tabular-nums',
+        ) : connectionId ? (
+          (connections[0]?.name ?? t('Exchange portfolio'))
+        ) : (
+          t('Exchange portfolios')
+        )
+      }
+    >
+      <View
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          paddingBottom: isNarrowWidth ? 80 : 20,
+        }}
+      >
+        <View style={{ flexShrink: 0, gap: 16 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 10,
+              flexWrap: 'wrap',
+              paddingTop: 16,
+            }}
+          >
+            <Select
+              id="portfolio-exchange"
+              options={[
+                ['', t('All exchanges')],
+                ...current.connections.map(c => [c.id, c.name] as const),
+              ]}
+              value={connectionId ?? ''}
+              onChange={id =>
+                void navigate(id ? `/portfolio/${id}` : '/portfolio')
+              }
+            />
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <Button
+                isDisabled={busy || isFetching}
+                onPress={async () => {
+                  await refetch();
+                  setHistory(undefined);
+                  setDate('');
                 }}
               >
-                <thead>
-                  <tr>
-                    <th>
-                      <Trans>Date</Trans>
-                    </th>
-                    <th>
-                      <Trans>Account</Trans>
-                    </th>
-                    <th>
-                      <Trans>Type</Trans>
-                    </th>
-                    <th>
-                      <Trans>Description</Trans>
-                    </th>
-                    <th>
-                      <Trans>Asset movements</Trans>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {events.slice(0, eventLimit).map(event => (
-                    <tr key={`${event.connectionId}/${event.id}`}>
-                      <td>{new Date(event.timestamp).toLocaleString()}</td>
-                      <td>
-                        {
-                          portfolio.connections.find(
-                            c => c.id === event.connectionId,
-                          )?.name
-                        }
-                        {' / '}
-                        {portfolio.collections[
-                          event.connectionId
-                        ].accounts.find(a => a.id === event.accountId)?.name ??
-                          event.accountId}
-                      </td>
-                      <td>{event.type}</td>
-                      <td>{event.description ?? event.reference ?? ''}</td>
-                      <td>
-                        {event.postings
-                          .map(p => `${p.quantity} ${p.asset}`)
-                          .join(', ')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p>
-              <Trans>
-                Showing {{ visible: Math.min(eventLimit, events.length) }} of{' '}
-                {{ total: events.length }} collected events
-              </Trans>
-            </p>
-            {eventLimit < events.length && (
-              <Button onPress={() => setEventLimit(limit => limit + 500)}>
-                <Trans>Show more activity</Trans>
+                <Trans>Refresh saved data</Trans>
               </Button>
-            )}
-          </section>
+              <Button
+                variant="primary"
+                isDisabled={busy || offline || !current.connections.length}
+                onPress={() =>
+                  void run(() => send('finance/sync', { id: connectionId }))
+                }
+              >
+                <Trans>Sync exchanges</Trans>
+              </Button>
+            </View>
+          </View>
+          {(offline || error) && (
+            <View
+              role={error ? 'alert' : 'status'}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 4,
+                backgroundColor: theme.warningBackground,
+                color: theme.warningText,
+              }}
+            >
+              {error || t('Server unavailable. Showing last saved portfolio.')}
+            </View>
+          )}
+          {(busy || isPending) && (
+            <Text role="status" style={{ color: theme.pageTextSubdued }}>
+              <Trans>Loading portfolio…</Trans>
+            </Text>
+          )}
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              justifyContent: 'space-between',
+              gap: 16,
+              flexWrap: 'wrap',
+            }}
+          >
+            <PortfolioSummary
+              portfolio={portfolio}
+              at={at}
+              historical={!!history}
+            />
+            <View style={{ gap: 6, paddingBottom: 18 }}>
+              <label
+                htmlFor="portfolio-date"
+                className={css({ fontSize: 12, color: theme.pageTextSubdued })}
+              >
+                <Trans>Valuation date</Trans>
+              </label>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Input
+                  id="portfolio-date"
+                  type="date"
+                  className={dateInputClassName}
+                  value={date}
+                  onChangeValue={setDate}
+                  style={{ width: 150 }}
+                />
+                <Button
+                  isDisabled={busy || offline || !date}
+                  onPress={() => {
+                    const instant = Math.min(
+                      Date.now(),
+                      Date.parse(`${date}T23:59:59+02:00`),
+                    );
+                    void run(
+                      () => send('finance/history', { at: instant }),
+                      instant,
+                    );
+                  }}
+                >
+                  <Trans>View history</Trans>
+                </Button>
+                {history && (
+                  <Button
+                    onPress={() => {
+                      setHistory(undefined);
+                      setDate('');
+                    }}
+                  >
+                    <Trans>Latest</Trans>
+                  </Button>
+                )}
+              </View>
+            </View>
+          </View>
+          <Tabs
+            selectedKey={current.connections.length ? tab : 'connections'}
+            onSelectionChange={key => setTab(String(key))}
+          >
+            <TabList
+              aria-label={t('Portfolio sections')}
+              className={css({
+                display: 'flex',
+                gap: 4,
+                borderBottom: `1px solid ${theme.tableBorder}`,
+                overflowX: 'auto',
+                marginBottom: 16,
+              })}
+            >
+              {tabs.map(([id, label]) => (
+                <Tab
+                  key={id}
+                  id={id}
+                  className={css({
+                    padding: '10px 14px',
+                    whiteSpace: 'nowrap',
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    outline: 'none',
+                    color: theme.pageTextLight,
+                    borderBottom: '2px solid transparent',
+                    '&[data-selected]': {
+                      color: theme.pageTextLink,
+                      borderColor: theme.pageTextLink,
+                      fontWeight: 600,
+                    },
+                    '&[data-focus-visible]': {
+                      boxShadow: `inset 0 0 0 2px ${theme.formInputBorderSelected}`,
+                      borderRadius: 4,
+                    },
+                  })}
+                >
+                  {label}
+                </Tab>
+              ))}
+            </TabList>
+            <TabPanel id="holdings">
+              <PortfolioHoldings portfolio={portfolio} at={at} />
+            </TabPanel>
+            <TabPanel id="activity">
+              <PortfolioActivity
+                key={connectionId ?? 'all'}
+                portfolio={portfolio}
+              />
+            </TabPanel>
+            <TabPanel id="positions">
+              <PortfolioPositions portfolio={portfolio} />
+            </TabPanel>
+            <TabPanel id="prices">
+              <PortfolioPrices prices={portfolio.prices} at={at} />
+            </TabPanel>
+            <TabPanel id="connections">
+              <PortfolioConnections
+                portfolio={{
+                  ...current,
+                  connections: current.connections.filter(
+                    c => !connectionId || c.id === connectionId,
+                  ),
+                }}
+                providers={providers}
+                busy={busy}
+                onConnect={onConnect}
+                onSync={id => run(() => send('finance/sync', { id }))}
+                onRemove={async id => {
+                  const removed = await run(() =>
+                    send('finance/remove', { id }),
+                  );
+                  if (removed && id === connectionId) {
+                    void navigate('/portfolio');
+                  }
+                  return removed;
+                }}
+                onImport={(id, document) =>
+                  run(() => send('finance/import', { id, document }))
+                }
+              />
+            </TabPanel>
+          </Tabs>
         </View>
       </View>
     </Page>
