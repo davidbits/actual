@@ -119,7 +119,20 @@ async function providers() {
   return request<ProviderDefinition[]>('providers');
 }
 
+async function read() {
+  try {
+    const portfolio = await pull();
+    const definitions = await providers().catch(() => []);
+    return { portfolio, providers: definitions, offline: false };
+  } catch {
+    // Network/auth availability is an expected UI state. Catch it within the
+    // handler so background reads do not emit a global internal-error toast.
+    return { portfolio: await get(), providers: [], offline: true };
+  }
+}
+
 export type FinanceHandlers = {
+  'finance/read': typeof read;
   'finance/get': typeof get;
   'finance/pull': typeof pull;
   'finance/sync': typeof sync;
@@ -132,6 +145,7 @@ export type FinanceHandlers = {
 
 export const app = createApp<FinanceHandlers>();
 app.method('finance/get', get);
+app.method('finance/read', mutator(read));
 app.method('finance/providers', providers);
 app.method('finance/pull', mutator(pull));
 app.method('finance/sync', mutator(sync));

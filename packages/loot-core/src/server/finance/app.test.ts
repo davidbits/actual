@@ -16,6 +16,17 @@ beforeEach(async () => {
 
 afterEach(() => vi.restoreAllMocks());
 
+it('returns an offline state for unavailable background reads instead of throwing', async () => {
+  vi.spyOn(prefs, 'getPrefs').mockReturnValue({
+    id: 'fixture',
+    budgetName: 'Fixture',
+  });
+  const result = await app.handlers['finance/read']();
+  expect(result.offline).toBe(true);
+  expect(result.portfolio.connections).toEqual([]);
+  expect(result.providers).toEqual([]);
+});
+
 it('does not rewrite the synced cache on unchanged background refreshes', async () => {
   vi.spyOn(prefs, 'getPrefs').mockReturnValue({
     id: 'fixture',
