@@ -72,11 +72,19 @@ async function save(portfolio: Portfolio) {
       ]),
     ),
   };
-  await db.update('finance_cache', {
-    id: 'portfolio',
-    payload: JSON.stringify(cached),
-    tombstone: 0,
-  });
+  const previous = await get();
+  // A background sidebar refresh must not write a new CRDT document just
+  // because the server's response timestamp changed.
+  if (
+    JSON.stringify({ ...cached, updatedAt: 0 }) !==
+    JSON.stringify({ ...previous, updatedAt: 0 })
+  ) {
+    await db.update('finance_cache', {
+      id: 'portfolio',
+      payload: JSON.stringify(cached),
+      tombstone: 0,
+    });
+  }
   return portfolio;
 }
 
