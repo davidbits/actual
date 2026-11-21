@@ -89,6 +89,5 @@ Standalone financial numbers should have tabular number styles applied.
 
 ## Related Documentation
 
-- See [AGENTS.md](./AGENTS.md) for general development guidelines
-- See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines
-- Community documentation: [https://actualbudget.org/docs/contributing/](https://actualbudget.org/docs/contributing/)
+- [AGENTS.md](AGENTS.md): local development rules.
+- [MAINTENANCE.md](MAINTENANCE.md): fork scope and operating procedures.

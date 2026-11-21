@@ -6,7 +6,7 @@ product
 
 ## Users
 
-People managing their own household finances: privacy-minded budgeters, self-hosters, and families who want full control of their money data. They use Actual regularly (often daily or weekly check-ins) on desktop and mobile, mid-workflow: reconciling accounts, categorizing transactions, adjusting envelope budgets, reviewing reports. Many migrated from other budgeting apps and value that Actual is local-first, free, and open-source.
+The owner of this personal fork, managing spending, payments, and on/off-budget accounts across browser devices. They use Actual regularly (often daily or weekly check-ins) on desktop and mobile, mid-workflow: reconciling accounts, categorizing transactions, adjusting envelope budgets, reviewing reports. Many migrated from other budgeting apps and value that Actual is local-first, free, and open-source.
 
 ## Product Purpose
 
@@ -27,7 +27,7 @@ Calm, trustworthy, practical. The interface should feel like a dependable tool t
 - **Trust through restraint.** No visual tricks that could make users doubt what they're seeing. Boring and correct beats clever.
 - **Fast routine, gentle depth.** Everyday tasks (categorize, reconcile, budget) must be frictionless; power features reveal themselves progressively without cluttering the default view.
 - **Local-first honesty.** The UI reflects the product's values: no dark patterns, no upsells, no attention-grabbing — the user owns the tool, not the other way around.
-- **Consistent across surfaces.** Desktop, web, and mobile share one design language via the shared component library; new work reuses existing components and theme tokens.
+- **Consistent across surfaces.** Desktop and mobile browsers share one design language via the shared component library; new work reuses existing components and theme tokens.
 
 ## Accessibility & Inclusion
 
