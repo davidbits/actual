@@ -16,7 +16,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { getAccountDb } from './account-db';
 import { handlers as accountApp } from './app-account';
-import { handlers as adminApp } from './app-admin';
 import { handlers as keysApp } from './app-api-keys';
 import { handlers as syncApp } from './app-sync';
 import {
@@ -29,7 +28,6 @@ import {
 const app = express();
 app.use(express.json());
 app.use('/account', accountApp);
-app.use('/admin', adminApp);
 app.use('/api-keys', keysApp);
 app.use('/sync', syncApp);
 
@@ -57,7 +55,7 @@ describe('budget access with an API key', () => {
     budget = budgetIds();
     otherBudget = budgetIds();
     db.mutate(
-      'INSERT INTO users (id, user_name, role, enabled) VALUES (?, ?, ?, 1)',
+      'INSERT INTO users (id, user_name, role, enabled, owner) VALUES (?, ?, ?, 1, 1)',
       [userId, userId, 'ADMIN'],
     );
     db.mutate(
@@ -280,7 +278,7 @@ describe('budget access with an API key', () => {
     expect(existsSync(getPathForGroupFile(otherBudget.groupId))).toBe(false);
   });
 
-  it.each(['revoked', 'disabled-user', 'deleted-user'])(
+  it.each(['revoked', 'disabled-user', 'deleted-user', 'non-owner'])(
     'rejects every permitted operation after %s',
     async change => {
       if (change === 'revoked') {
@@ -290,6 +288,8 @@ describe('budget access with an API key', () => {
           .expect(200);
       } else if (change === 'disabled-user') {
         db.mutate('UPDATE users SET enabled = 0 WHERE id = ?', [userId]);
+      } else if (change === 'non-owner') {
+        db.mutate('UPDATE users SET owner = 0 WHERE id = ?', [userId]);
       } else if (change === 'deleted-user') {
         db.mutate('DELETE FROM users WHERE id = ?', [userId]);
       }
@@ -324,7 +324,7 @@ describe('budget access with an API key', () => {
     },
   );
 
-  it('retains shared access only while the creator has access', async () => {
+  it('ignores legacy sharing grants', async () => {
     db.mutate('UPDATE users SET role = ? WHERE id = ?', ['BASIC', userId]);
     db.mutate('UPDATE files SET owner = ? WHERE id = ?', [
       'genericAdmin',
@@ -334,7 +334,7 @@ describe('budget access with an API key', () => {
       userId,
       budget.fileId,
     ]);
-    expect((await get('/sync/download-user-file')).status).toBe(200);
+    expect((await get('/sync/download-user-file')).status).toBe(403);
     db.mutate('DELETE FROM user_access WHERE user_id = ?', [userId]);
     expect((await get('/sync/download-user-file')).status).toBe(403);
   });
@@ -346,7 +346,6 @@ describe('budget access with an API key', () => {
     '/sync/update-user-filename',
     '/sync/delete-user-file',
     '/account/server-prefs',
-    '/admin/access',
     '/api-keys',
   ])('rejects API keys on POST %s', async path => {
     expect(
@@ -360,7 +359,7 @@ describe('budget access with an API key', () => {
   });
 
   it('rejects administration and key management', async () => {
-    expect((await get('/admin/users')).status).toBe(401);
+    expect((await get('/admin/users')).status).toBe(404);
     expect((await get('/api-keys')).status).toBe(401);
     expect(
       (

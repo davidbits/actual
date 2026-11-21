@@ -294,7 +294,7 @@ const configSchema = convict({
   },
 
   userCreationMode: {
-    doc: 'Determines how users can be created.',
+    doc: 'Legacy setting accepted for compatibility; this fork only admits the owner.',
     format: ['manual', 'login'],
     default: 'manual',
     env: 'ACTUAL_USER_CREATION_MODE',

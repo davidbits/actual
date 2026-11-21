@@ -27,7 +27,6 @@ import {
 } from './app-sync/validation';
 import { config } from './load-config';
 import { SecretName, secretsService } from './services/secrets-service';
-import * as UserService from './services/user-service';
 import * as simpleSync from './sync-simple';
 import { atomicWriteFile } from './util/atomic-write';
 import {
@@ -150,13 +149,7 @@ function requireFileOwner(file: File, userId: string) {
 }
 
 function requireFileAccess(file: File, userId: string) {
-  if (requireFileOwner(file, userId) === null) {
-    return null;
-  }
-  if (UserService.countUserAccess(file.id, userId) > 0) {
-    return null;
-  }
-  return 'file-access-not-allowed';
+  return requireFileOwner(file, userId);
 }
 
 app.post('/sync', async (req, res): Promise<void> => {
@@ -525,10 +518,7 @@ app.get('/list-user-files', (req, res) => {
       name: row.name,
       encryptKeyId: row.encryptKeyId,
       owner: row.owner,
-      usersWithAccess: fileService.findUsersWithAccess(row.id).map(access => ({
-        ...access,
-        owner: access.userId === row.owner,
-      })),
+      usersWithAccess: [],
     })),
   });
 });
@@ -571,10 +561,7 @@ app.get('/get-user-file-info', (req, res) => {
       groupId: file.groupId,
       name: file.name,
       encryptMeta: file.encryptMeta ? JSON.parse(file.encryptMeta) : null,
-      usersWithAccess: fileService.findUsersWithAccess(file.id).map(access => ({
-        ...access,
-        owner: access.userId === file.owner,
-      })),
+      usersWithAccess: [],
     },
   });
 });

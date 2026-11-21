@@ -4,7 +4,6 @@ import rateLimit from 'express-rate-limit';
 import {
   bootstrap,
   getAccountDb,
-  getActiveLoginMethod,
   getLoginMethod,
   getServerPrefs,
   getUserInfo,
@@ -57,7 +56,7 @@ app.get('/needs-bootstrap', (req, res) => {
           ? availableLoginMethods[0].method
           : getLoginMethod(),
       availableLoginMethods,
-      multiuser: getActiveLoginMethod() === 'openid',
+      multiuser: false,
     },
   });
 });

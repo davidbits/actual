@@ -173,39 +173,10 @@ class FilesService {
             limit,
           ])
         : this.accountDb.all(
-            `SELECT files.*
-        FROM files
-        WHERE files.owner = ? and deleted = 0
-      UNION
-       SELECT files.*
-        FROM files
-        JOIN user_access
-          ON user_access.file_id = files.id
-          AND user_access.user_id = ?
-       WHERE files.deleted = 0 LIMIT ?`,
-            [userId, userId, limit],
+            'SELECT * FROM files WHERE owner = ? AND deleted = 0 LIMIT ?',
+            [userId, limit],
           )
     ).map((item: RawFile) => this.validate(item));
-  }
-
-  findUsersWithAccess(fileId: FileId) {
-    const userAccess =
-      this.accountDb.all(
-        `SELECT UA.user_id as userId, users.display_name displayName, users.user_name userName
-              FROM files
-                JOIN user_access UA ON UA.file_id = files.id
-                JOIN users on users.id = UA.user_id
-              WHERE files.id = ?
-          UNION ALL
-        SELECT users.id, users.display_name, users.user_name
-              FROM files
-                JOIN users on users.id = files.owner
-              WHERE files.id = ?
-          `,
-        [fileId, fileId],
-      ) || [];
-
-    return userAccess;
   }
 
   update(id: FileId, fileUpdate: Partial<File>) {

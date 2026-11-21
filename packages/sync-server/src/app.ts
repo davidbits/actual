@@ -9,7 +9,6 @@ import rateLimit from 'express-rate-limit';
 
 import { bootstrap } from './account-db';
 import * as accountApp from './app-account';
-import * as adminApp from './app-admin';
 import * as akahuApp from './app-akahu/app-akahu.js';
 import * as apiKeysApp from './app-api-keys';
 import * as corsApp from './app-cors-proxy';
@@ -25,7 +24,7 @@ import { listen } from './util/server-listen';
 
 const debugSensitive = createDebug('actual-sensitive:server');
 
-const app = express();
+export const app = express();
 
 process.on('unhandledRejection', reason => {
   console.log('Unhandled rejection');
@@ -76,7 +75,10 @@ if (config.get('corsProxy.enabled')) {
   app.use('/cors-proxy', corsApp.handlers);
 }
 
-app.use('/admin', adminApp.handlers);
+// Retired collaboration routes must never fall through to the web app.
+app.use('/admin', (_req, res) => {
+  res.status(404).send({ status: 'error', reason: 'not-found' });
+});
 app.use('/openid', openidApp.handlers);
 
 app.get('/mode', (req, res) => {
@@ -194,10 +196,6 @@ export function parseHTTPSConfig(value: string) {
 }
 
 function sendServerStartedMessage(address: string) {
-  // Signify to any parent process that the server has started. Used in electron desktop app
-  // oxlint-disable-next-line typescript/ban-ts-comment
-  // @ts-ignore-error electron types
-  process.parentPort?.postMessage({ type: 'server-started' });
   console.log('Listening on ' + address + ':' + config.get('port') + '...');
 }
 

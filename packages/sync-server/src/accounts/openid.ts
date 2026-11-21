@@ -263,15 +263,11 @@ export async function loginWithOpenIdFinalize(body) {
 
         // Check if user was created by another transaction
         const existingUser = accountDb.first(
-          'SELECT id FROM users WHERE user_name = ?',
+          'SELECT id, owner FROM users WHERE user_name = ?',
           [identity],
         );
 
-        if (
-          !existingUser &&
-          (countUsersWithUserName === 0 ||
-            config.get('userCreationMode') === 'login')
-        ) {
+        if (!existingUser && countUsersWithUserName === 0) {
           userId = uuidv4();
           accountDb.mutate(
             'INSERT INTO users (id, user_name, display_name, enabled, owner, role) VALUES (?, ?, ?, 1, ?, ?)',
@@ -283,14 +279,10 @@ export async function loginWithOpenIdFinalize(body) {
               countUsersWithUserName === 0 ? 'ADMIN' : 'BASIC',
             ],
           );
-
-          if (countUsersWithUserName === 0) {
-            const userFromPasswordMethod = getUserByUsername('');
-            if (userFromPasswordMethod) {
-              transferAllFilesFromUser(userId, userFromPasswordMethod.user_id);
-            }
-          }
         } else {
+          if (!existingUser || existingUser.owner !== 1) {
+            throw new Error('openid-grant-failed');
+          }
           const { id: userIdFromDb, display_name: displayName } =
             accountDb.first(
               'SELECT id, display_name FROM users WHERE user_name = ? and enabled = 1',
@@ -309,6 +301,10 @@ export async function loginWithOpenIdFinalize(body) {
           }
 
           userId = userIdFromDb;
+        }
+        const passwordUserId = getUserByUsername('');
+        if (passwordUserId) {
+          transferAllFilesFromUser(userId, passwordUserId);
         }
       });
     } catch (error) {

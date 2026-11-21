@@ -954,9 +954,8 @@ describe('/download-user-file', () => {
         expect(res.body.toString('utf8')).toEqual(fileContent);
       });
 
-      it('allows non-owner with user_access to download via requireFileAccess (UserService.countUserAccess > 0)', async () => {
+      it('rejects downloads granted only by legacy sharing records', async () => {
         // File owned by another user; access granted only via user_access row, not owner/admin.
-        // This exercises the requireFileAccess branch that uses UserService.countUserAccess.
         const fileId = generateFileId();
         const fileContent = 'shared-user content';
         fs.writeFileSync(getPathForUserFile(fileId), fileContent);
@@ -979,15 +978,7 @@ describe('/download-user-file', () => {
           .set('x-actual-token', 'valid-token-user')
           .set('x-actual-file-id', fileId);
 
-        expect(res.statusCode).toEqual(200);
-        expect(res.headers).toEqual(
-          expect.objectContaining({
-            'content-disposition': `attachment;filename=${fileId}`,
-            'content-type': 'application/octet-stream',
-          }),
-        );
-        expect(res.body).toBeInstanceOf(Buffer);
-        expect(res.body.toString('utf8')).toEqual(fileContent);
+        expect(res.statusCode).toEqual(403);
       });
     });
   });

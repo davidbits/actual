@@ -20,7 +20,8 @@ export function validateBudgetSession(req: Request, res: Response) {
       ? getAccountDb().first(
           `SELECT api_keys.id, api_keys.user_id
            FROM api_keys JOIN users ON users.id = api_keys.user_id
-           WHERE api_keys.key_hash = ? AND users.enabled = 1`,
+           WHERE api_keys.key_hash = ? AND users.enabled = 1
+             AND (users.user_name = '' OR users.owner = 1)`,
           [createHash('sha256').update(token).digest('hex')],
         )
       : null;

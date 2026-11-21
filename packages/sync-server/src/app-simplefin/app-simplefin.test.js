@@ -482,7 +482,7 @@ describe('per-budget credentials', () => {
           .post('/status')
           .set('x-actual-token', 'valid-token-user')
           .set('X-Actual-File-Id', fileA)
-          .expect(200);
+          .expect(403);
       } finally {
         getAccountDb().mutate('DELETE FROM user_access WHERE file_id = ?', [
           fileA,

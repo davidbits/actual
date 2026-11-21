@@ -62,7 +62,7 @@ describe('deleted budget bank sync', () => {
     },
   );
 
-  it('rejects deleted budgets even when a sharing record remains', async () => {
+  it('ignores legacy sharing grants before and after deleting a budget', async () => {
     getAccountDb().mutate('UPDATE files SET owner = ? WHERE id = ?', [
       'genericAdmin',
       fileId,
@@ -75,7 +75,7 @@ describe('deleted budget bank sync', () => {
       .post('/status')
       .set('x-actual-token', 'valid-token-user')
       .set('X-Actual-File-Id', fileId)
-      .expect(200);
+      .expect(403);
     getAccountDb().mutate('UPDATE files SET deleted = 1 WHERE id = ?', [
       fileId,
     ]);

@@ -26,6 +26,10 @@ const openIdConfigRateLimiter = rateLimit({
 
 export { app as handlers, openIdConfigRateLimiter };
 
+app.get('/owner-created', (_req, res) => {
+  res.json(UserService.getOwnerCount() > 0);
+});
+
 app.post('/enable', validateSessionMiddleware, async (req, res) => {
   if (!isAdmin(res.locals.user_id)) {
     res.status(403).send({

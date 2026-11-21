@@ -204,16 +204,19 @@ export async function disableOpenID(loginSettings) {
     accountDb.transaction(() => {
       accountDb.mutate('DELETE FROM sessions');
       accountDb.mutate('DELETE FROM api_keys');
-      accountDb.mutate(
-        `DELETE FROM user_access
-                              WHERE user_access.user_id IN (
-                                  SELECT users.id
-                                  FROM users
-                                  WHERE users.user_name <> ?
-                              );`,
+      // Authentication changes preserve budgets and existing identity records.
+      const passwordUser = accountDb.first(
+        'SELECT id FROM users WHERE user_name = ?',
         [''],
       );
-      accountDb.mutate('DELETE FROM users WHERE user_name <> ?', ['']);
+      if (passwordUser) {
+        accountDb.mutate(
+          `UPDATE files SET owner = ? WHERE owner IN (
+            SELECT id FROM users WHERE owner = 1 AND user_name <> ''
+          )`,
+          [passwordUser.id],
+        );
+      }
       accountDb.mutate('DELETE FROM auth WHERE method = ?', ['openid']);
     });
   } catch (err) {
@@ -228,7 +231,8 @@ export function getSession(token) {
     `SELECT sessions.*
      FROM sessions
      JOIN users ON users.id = sessions.user_id
-     WHERE sessions.token = ? AND users.enabled = 1`,
+     WHERE sessions.token = ? AND users.enabled = 1
+       AND (users.user_name = '' OR users.owner = 1)`,
     [token],
   );
 }

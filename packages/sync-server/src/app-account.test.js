@@ -9,7 +9,7 @@ const ADMIN_ROLE = 'ADMIN';
 const BASIC_ROLE = 'BASIC';
 
 // Create user helper function
-const createUser = (userId, userName, role, owner = 0, enabled = 1) => {
+const createUser = (userId, userName, role, owner = 1, enabled = 1) => {
   getAccountDb().mutate(
     'INSERT INTO users (id, user_name, display_name, enabled, owner, role) VALUES (?, ?, ?, ?, ?, ?)',
     [userId, userName, `${userName} display`, enabled, owner, role],
@@ -316,7 +316,7 @@ describe('/server-prefs', () => {
       const res = await request(app)
         .post('/server-prefs')
         .send({
-          prefs: { 'flags.plugins': 'true' },
+          prefs: { 'legacy.preference': 'true' },
         });
 
       expect(res.statusCode).toEqual(401);
@@ -329,7 +329,7 @@ describe('/server-prefs', () => {
         .post('/server-prefs')
         .set('x-actual-token', basicSessionToken)
         .send({
-          prefs: { 'flags.plugins': 'true' },
+          prefs: { 'legacy.preference': 'true' },
         });
 
       expect(res.statusCode).toEqual(403);
@@ -384,7 +384,7 @@ describe('/server-prefs', () => {
     });
 
     it('should return 200 and save server preferences for admin user', async () => {
-      const prefs = { 'flags.plugins': 'true' };
+      const prefs = { 'legacy.preference': 'true' };
 
       const res = await request(app)
         .post('/server-prefs')
@@ -406,11 +406,11 @@ describe('/server-prefs', () => {
       // First, set initial preferences
       getAccountDb().mutate(
         'INSERT INTO server_prefs (key, value) VALUES (?, ?)',
-        ['flags.plugins', 'false'],
+        ['legacy.preference', 'false'],
       );
 
       // Update preferences
-      const updatedPrefs = { 'flags.plugins': 'true' };
+      const updatedPrefs = { 'legacy.preference': 'true' };
       const res = await request(app)
         .post('/server-prefs')
         .set('x-actual-token', adminSessionToken)
@@ -429,7 +429,7 @@ describe('/server-prefs', () => {
 
     it('should save multiple server preferences', async () => {
       const prefs = {
-        'flags.plugins': 'true',
+        'legacy.preference': 'true',
         anotherKey: 'anotherValue',
       };
 

@@ -10,6 +10,7 @@ import type { OpenIdConfig } from '#types/models';
 import { createApiKey, listApiKeys, revokeApiKey } from './api-keys';
 
 export type AuthHandlers = {
+  'owner-created': typeof ownerCreated;
   'api-keys-list': typeof listApiKeys;
   'api-keys-create': typeof createApiKey;
   'api-keys-revoke': typeof revokeApiKey;
@@ -28,6 +29,7 @@ export type AuthHandlers = {
 };
 
 export const app = createApp<AuthHandlers>();
+app.method('owner-created', ownerCreated);
 app.method('api-keys-list', listApiKeys);
 app.method('api-keys-create', createApiKey);
 app.method('api-keys-revoke', revokeApiKey);
@@ -81,7 +83,6 @@ async function needsBootstrap({ url }: { url?: string } = {}) {
         displayName: string;
         active: boolean;
       }>;
-      multiuser: boolean;
     };
   };
 
@@ -96,7 +97,6 @@ async function needsBootstrap({ url }: { url?: string } = {}) {
     availableLoginMethods: res.data.availableLoginMethods || [
       { method: 'password', active: true, displayName: 'Password' },
     ],
-    multiuser: res.data.multiuser || false,
     hasServer: true,
   };
 }
@@ -410,4 +410,11 @@ async function enablePassword(passwordConfig: { password: string }) {
     throw err;
   }
   return {};
+}
+
+async function ownerCreated(): Promise<boolean> {
+  const server = getServer();
+  if (!server) return false;
+  const result = await get(server.BASE_SERVER + '/openid/owner-created');
+  return result ? JSON.parse(result) === true : false;
 }

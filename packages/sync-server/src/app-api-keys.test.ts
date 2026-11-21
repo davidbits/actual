@@ -8,7 +8,6 @@ import { bootstrapPassword, changePassword } from './accounts/password';
 import { handlers as accountApp } from './app-account';
 import { handlers as app } from './app-api-keys';
 import { handlers as syncApp } from './app-sync';
-import { deleteUser } from './services/user-service';
 
 describe('API key lifecycle', () => {
   const db = getAccountDb();
@@ -29,7 +28,7 @@ describe('API key lifecycle', () => {
       [otherUserId, otherSession],
     ]) {
       db.mutate(
-        'INSERT INTO users (id, user_name, role, enabled) VALUES (?, ?, ?, 1)',
+        'INSERT INTO users (id, user_name, role, enabled, owner) VALUES (?, ?, ?, 1, 1)',
         [id, id, 'BASIC'],
       );
       db.mutate(
@@ -90,12 +89,9 @@ describe('API key lifecycle', () => {
     expect(second.body.data.id).not.toBe(metadata.id);
   });
 
-  it('isolates listing and revocation by creator, even for a shared budget', async () => {
-    db.mutate('INSERT INTO user_access (user_id, file_id) VALUES (?, ?)', [
-      otherUserId,
-      fileId,
-    ]);
+  it('isolates listing and revocation across retained identities', async () => {
     const first = await createKey();
+    db.mutate('UPDATE files SET owner = ? WHERE id = ?', [otherUserId, fileId]);
     const second = await createKey(otherSession);
     expect(second.status).toBe(201);
     const listed = await request(app)
@@ -137,7 +133,9 @@ describe('API key lifecycle', () => {
   it('removes keys and their budget grants when their creator is deleted', async () => {
     const created = await createKey();
     expect(created.status).toBe(201);
-    expect(deleteUser(userId)).toBe(1);
+    expect(db.mutate('DELETE FROM users WHERE id = ?', [userId]).changes).toBe(
+      1,
+    );
     expect(
       db.first('SELECT id FROM api_keys WHERE id = ?', [created.body.data.id]),
     ).toBeNull();
@@ -265,7 +263,7 @@ describe('API key lifecycle', () => {
     ).toEqual([]);
   });
 
-  it.each(['missing', 'expired', 'disabled', 'api-key'])(
+  it.each(['missing', 'expired', 'disabled', 'non-owner', 'api-key'])(
     'requires an active user session for every lifecycle endpoint (%s)',
     async kind => {
       const created = await createKey();
@@ -278,6 +276,9 @@ describe('API key lifecycle', () => {
       }
       if (kind === 'disabled') {
         db.mutate('UPDATE users SET enabled = 0 WHERE id = ?', [userId]);
+      }
+      if (kind === 'non-owner') {
+        db.mutate('UPDATE users SET owner = 0 WHERE id = ?', [userId]);
       }
       if (kind === 'api-key') token = created.body.data.key;
 
