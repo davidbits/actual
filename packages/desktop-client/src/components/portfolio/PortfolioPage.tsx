@@ -27,6 +27,7 @@ export function PortfolioPage() {
   const [error, setError] = useState('');
   const [date, setDate] = useState('');
   const [at, setAt] = useState(() => Date.now());
+  const [eventLimit, setEventLimit] = useState(500);
 
   useEffect(() => {
     let active = true;
@@ -249,7 +250,13 @@ export function PortfolioPage() {
                       <Trans>Date</Trans>
                     </th>
                     <th>
+                      <Trans>Account</Trans>
+                    </th>
+                    <th>
                       <Trans>Type</Trans>
+                    </th>
+                    <th>
+                      <Trans>Description</Trans>
                     </th>
                     <th>
                       <Trans>Asset movements</Trans>
@@ -257,10 +264,23 @@ export function PortfolioPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {events.slice(0, 500).map(event => (
+                  {events.slice(0, eventLimit).map(event => (
                     <tr key={`${event.connectionId}/${event.id}`}>
                       <td>{new Date(event.timestamp).toLocaleString()}</td>
+                      <td>
+                        {
+                          portfolio.connections.find(
+                            c => c.id === event.connectionId,
+                          )?.name
+                        }
+                        {' / '}
+                        {portfolio.collections[
+                          event.connectionId
+                        ].accounts.find(a => a.id === event.accountId)?.name ??
+                          event.accountId}
+                      </td>
                       <td>{event.type}</td>
+                      <td>{event.description ?? event.reference ?? ''}</td>
                       <td>
                         {event.postings
                           .map(p => `${p.quantity} ${p.asset}`)
@@ -271,6 +291,17 @@ export function PortfolioPage() {
                 </tbody>
               </table>
             </div>
+            <p>
+              <Trans>
+                Showing {{ visible: Math.min(eventLimit, events.length) }} of{' '}
+                {{ total: events.length }} collected events
+              </Trans>
+            </p>
+            {eventLimit < events.length && (
+              <Button onPress={() => setEventLimit(limit => limit + 500)}>
+                <Trans>Show more activity</Trans>
+              </Button>
+            )}
           </section>
         </View>
       </View>

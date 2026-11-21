@@ -34,7 +34,18 @@ test('connects an exchange and keeps its portfolio available offline', async ({
               { accountId: 'spot', asset: 'BTC', quantity: '0.012345678' },
             ],
             positions: [],
-            events: [],
+            events: Array.from({ length: 501 }, (_, index) => ({
+              id: `event-${index}`,
+              accountId: 'spot',
+              stream: 'ledger',
+              timestamp: at - index * 1000,
+              type: 'movement',
+              status: 'booked',
+              description: `Synthetic movement ${index}`,
+              postings: [
+                { asset: 'BTC', quantity: '0.00001', role: 'principal' },
+              ],
+            })),
             cursors: {},
             coverage: [{ stream: 'balances', status: 'ok' }],
           },
@@ -103,6 +114,23 @@ test('connects an exchange and keeps its portfolio available offline', async ({
   await expect(
     page.getByRole('region', { name: 'Holdings', exact: true }),
   ).toMatchThemeScreenshots();
+  const activity = page.getByRole('region', {
+    name: 'Exchange activity',
+    exact: true,
+  });
+  await expect(
+    activity.getByText('Synthetic movement 500', { exact: true }),
+  ).toHaveCount(0);
+  await activity.getByRole('button', { name: 'Show more activity' }).click();
+  await expect(
+    activity.getByText('Synthetic movement 500', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    activity.getByText('Synthetic exchange / Spot', { exact: true }).first(),
+  ).toBeAttached();
+  await expect(
+    activity.getByRole('button', { name: 'Show more activity' }),
+  ).toHaveCount(0);
   await page.unroute('https://sync.example.test/**');
   await page.route('https://sync.example.test/**', route => route.abort());
   await page.reload();
