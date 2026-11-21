@@ -19,6 +19,10 @@ import * as pluggai from './app-pluggyai/app-pluggyai';
 import * as secretApp from './app-secrets';
 import * as simpleFinApp from './app-simplefin/app-simplefin';
 import * as syncApp from './app-sync';
+import {
+  handlers as financeHandlers,
+  startFinanceScheduler,
+} from './finance/app';
 import { config } from './load-config';
 import { listen } from './util/server-listen';
 
@@ -70,6 +74,7 @@ app.use('/pluggyai', pluggai.handlers);
 app.use('/akahu', akahuApp.handlers);
 app.use('/enablebanking', enableBankingApp.handlers);
 app.use('/secret', secretApp.handlers);
+app.use('/finance', financeHandlers);
 
 if (config.get('corsProxy.enabled')) {
   app.use('/cors-proxy', corsApp.handlers);
@@ -199,6 +204,7 @@ function sendServerStartedMessage(address: string) {
 }
 
 export async function run() {
+  startFinanceScheduler();
   const portVal = config.get('port');
   const port = typeof portVal === 'string' ? parseInt(portVal) : portVal;
   const hostname = config.get('hostname');
