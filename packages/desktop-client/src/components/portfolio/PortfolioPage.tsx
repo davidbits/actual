@@ -76,196 +76,203 @@ export function PortfolioPage() {
     .sort((a, b) => b.timestamp - a.timestamp);
   return (
     <Page header={t('Portfolio')}>
-      <View style={{ padding: 20, gap: 20, overflowY: 'auto', flex: 1 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-          <Button
-            isDisabled={busy}
-            onPress={() => {
-              setDate('');
-              setAt(Date.now());
-              void run(() => send('finance/sync', {}));
-            }}
-          >
-            <Trans>Sync exchanges</Trans>
-          </Button>
-          <Button
-            isDisabled={busy}
-            onPress={() => {
-              setDate('');
-              setAt(Date.now());
-              void run(() => send('finance/pull'));
-            }}
-          >
-            <Trans>Refresh saved data</Trans>
-          </Button>
-          <label>
-            <Trans>Valuation date</Trans>
-            <input
-              aria-label={t('Valuation date')}
-              type="date"
-              value={date}
-              onChange={event => setDate(event.target.value)}
-            />
-          </label>
-          <Button
-            isDisabled={busy || !date}
-            onPress={() => {
-              const instant = Math.min(
-                Date.now(),
-                Date.parse(`${date}T23:59:59+02:00`),
-              );
-              setAt(instant);
-              void run(() => send('finance/history', { at: instant }), instant);
-            }}
-          >
-            <Trans>View history</Trans>
-          </Button>
-        </View>
-        {busy && (
-          <p role="status">
-            <Trans>Collecting exchange data…</Trans>
-          </p>
-        )}
-        {error && <p role="alert">{error}</p>}
-        {!!date && (
-          <p>
-            <Trans>
-              Historical values use saved holdings checkpoints and prices
-              available at the selected date. Dates without checkpoints remain
-              unavailable.
-            </Trans>
-          </p>
-        )}
-        <PortfolioHoldings portfolio={portfolio} at={at} />
-        <PortfolioPrices prices={portfolio.prices} at={at} />
-        <PortfolioPositions portfolio={portfolio} />
-        <section aria-label={t('Connections')}>
-          <h2>
-            <Trans>Connections</Trans>
-          </h2>
-          {portfolio.connections.map(connection => (
-            <View key={connection.id} style={{ paddingBottom: 16, gap: 8 }}>
-              <strong>{connection.name}</strong>
-              <span>
-                {connection.lastSuccess
-                  ? new Date(connection.lastSuccess).toLocaleString()
-                  : t('Not yet synced')}
-              </span>
-              {connection.error && (
-                <span role="status">{connection.error}</span>
-              )}
-              <Button
-                isDisabled={busy}
-                onPress={() =>
-                  void run(() => send('finance/sync', { id: connection.id }))
-                }
-              >
-                <Trans>Sync connection</Trans>
-              </Button>
-              <Button
-                isDisabled={busy}
-                onPress={() =>
-                  void run(() => send('finance/remove', { id: connection.id }))
-                }
-              >
-                <Trans>Disconnect and remove collected data</Trans>
-              </Button>
-              <Button
-                isDisabled={busy}
-                onPress={() =>
-                  void run(() =>
-                    send('finance/connect', {
-                      ...connection,
-                      enabled: !connection.enabled,
-                    }),
-                  )
-                }
-              >
-                {connection.enabled
-                  ? t('Pause automatic collection')
-                  : t('Resume automatic collection')}
-              </Button>
-              <PortfolioArchive
-                id={connection.id}
-                collection={portfolio.collections[connection.id]}
-                prices={portfolio.prices}
-                disabled={busy}
-                onImport={async (id, document) => {
-                  await run(() => send('finance/import', { id, document }));
-                }}
+      <View style={{ overflowY: 'auto', flex: 1 }}>
+        <View style={{ padding: 20, gap: 20, flexShrink: 0 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            <Button
+              isDisabled={busy}
+              onPress={() => {
+                setDate('');
+                setAt(Date.now());
+                void run(() => send('finance/sync', {}));
+              }}
+            >
+              <Trans>Sync exchanges</Trans>
+            </Button>
+            <Button
+              isDisabled={busy}
+              onPress={() => {
+                setDate('');
+                setAt(Date.now());
+                void run(() => send('finance/pull'));
+              }}
+            >
+              <Trans>Refresh saved data</Trans>
+            </Button>
+            <label>
+              <Trans>Valuation date</Trans>
+              <input
+                aria-label={t('Valuation date')}
+                type="date"
+                value={date}
+                onChange={event => setDate(event.target.value)}
               />
-              <details>
-                <summary>
-                  <Trans>Data coverage</Trans>
-                </summary>
-                <ul>
-                  {portfolio.collections[connection.id]?.coverage.map(
-                    (coverage, index) => (
-                      <li key={index}>
-                        {coverage.stream}: {coverage.status}
-                        {coverage.reason ? ` — ${coverage.reason}` : ''}
-                      </li>
-                    ),
-                  )}
-                </ul>
-              </details>
-            </View>
-          ))}
-          {!portfolio.connections.length && (
+            </label>
+            <Button
+              isDisabled={busy || !date}
+              onPress={() => {
+                const instant = Math.min(
+                  Date.now(),
+                  Date.parse(`${date}T23:59:59+02:00`),
+                );
+                setAt(instant);
+                void run(
+                  () => send('finance/history', { at: instant }),
+                  instant,
+                );
+              }}
+            >
+              <Trans>View history</Trans>
+            </Button>
+          </View>
+          {busy && (
+            <p role="status">
+              <Trans>Collecting exchange data…</Trans>
+            </p>
+          )}
+          {error && <p role="alert">{error}</p>}
+          {!!date && (
             <p>
               <Trans>
-                Connect an exchange to collect holdings and activity.
+                Historical values use saved holdings checkpoints and prices
+                available at the selected date. Dates without checkpoints remain
+                unavailable.
               </Trans>
             </p>
           )}
-        </section>
-        <PortfolioConnectionForm
-          providers={providers}
-          busy={busy}
-          onConnect={connect}
-        />
-        <section aria-label={t('Exchange activity')}>
-          <h2>
-            <Trans>Exchange activity</Trans>
-          </h2>
-          <div style={{ overflowX: 'auto' }}>
-            <table
-              style={{
-                width: '100%',
-                textAlign: 'left',
-                borderSpacing: '12px 8px',
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              <thead>
-                <tr>
-                  <th>
-                    <Trans>Date</Trans>
-                  </th>
-                  <th>
-                    <Trans>Type</Trans>
-                  </th>
-                  <th>
-                    <Trans>Asset movements</Trans>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {events.slice(0, 500).map(event => (
-                  <tr key={`${event.connectionId}/${event.id}`}>
-                    <td>{new Date(event.timestamp).toLocaleString()}</td>
-                    <td>{event.type}</td>
-                    <td>
-                      {event.postings
-                        .map(p => `${p.quantity} ${p.asset}`)
-                        .join(', ')}
-                    </td>
+          <PortfolioHoldings portfolio={portfolio} at={at} />
+          <PortfolioPrices prices={portfolio.prices} at={at} />
+          <PortfolioPositions portfolio={portfolio} />
+          <section aria-label={t('Connections')}>
+            <h2>
+              <Trans>Connections</Trans>
+            </h2>
+            {portfolio.connections.map(connection => (
+              <View key={connection.id} style={{ paddingBottom: 16, gap: 8 }}>
+                <strong>{connection.name}</strong>
+                <span>
+                  {connection.lastSuccess
+                    ? new Date(connection.lastSuccess).toLocaleString()
+                    : t('Not yet synced')}
+                </span>
+                {connection.error && (
+                  <span role="status">{connection.error}</span>
+                )}
+                <Button
+                  isDisabled={busy}
+                  onPress={() =>
+                    void run(() => send('finance/sync', { id: connection.id }))
+                  }
+                >
+                  <Trans>Sync connection</Trans>
+                </Button>
+                <Button
+                  isDisabled={busy}
+                  onPress={() =>
+                    void run(() =>
+                      send('finance/remove', { id: connection.id }),
+                    )
+                  }
+                >
+                  <Trans>Disconnect and remove collected data</Trans>
+                </Button>
+                <Button
+                  isDisabled={busy}
+                  onPress={() =>
+                    void run(() =>
+                      send('finance/connect', {
+                        ...connection,
+                        enabled: !connection.enabled,
+                      }),
+                    )
+                  }
+                >
+                  {connection.enabled
+                    ? t('Pause automatic collection')
+                    : t('Resume automatic collection')}
+                </Button>
+                <PortfolioArchive
+                  id={connection.id}
+                  collection={portfolio.collections[connection.id]}
+                  prices={portfolio.prices}
+                  disabled={busy}
+                  onImport={async (id, document) => {
+                    await run(() => send('finance/import', { id, document }));
+                  }}
+                />
+                <details>
+                  <summary>
+                    <Trans>Data coverage</Trans>
+                  </summary>
+                  <ul>
+                    {portfolio.collections[connection.id]?.coverage.map(
+                      (coverage, index) => (
+                        <li key={index}>
+                          {coverage.stream}: {coverage.status}
+                          {coverage.reason ? ` — ${coverage.reason}` : ''}
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </details>
+              </View>
+            ))}
+            {!portfolio.connections.length && (
+              <p>
+                <Trans>
+                  Connect an exchange to collect holdings and activity.
+                </Trans>
+              </p>
+            )}
+          </section>
+          <PortfolioConnectionForm
+            providers={providers}
+            busy={busy}
+            onConnect={connect}
+          />
+          <section aria-label={t('Exchange activity')}>
+            <h2>
+              <Trans>Exchange activity</Trans>
+            </h2>
+            <div style={{ overflowX: 'auto' }}>
+              <table
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  borderSpacing: '12px 8px',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th>
+                      <Trans>Date</Trans>
+                    </th>
+                    <th>
+                      <Trans>Type</Trans>
+                    </th>
+                    <th>
+                      <Trans>Asset movements</Trans>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </thead>
+                <tbody>
+                  {events.slice(0, 500).map(event => (
+                    <tr key={`${event.connectionId}/${event.id}`}>
+                      <td>{new Date(event.timestamp).toLocaleString()}</td>
+                      <td>{event.type}</td>
+                      <td>
+                        {event.postings
+                          .map(p => `${p.quantity} ${p.asset}`)
+                          .join(', ')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </View>
       </View>
     </Page>
   );
