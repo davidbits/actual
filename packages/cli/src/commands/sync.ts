@@ -35,11 +35,7 @@ export function registerSyncCommand(program: Command) {
       'Sync the local cached budget with the server, print cache status, or clear the cache',
     )
     .option('--status', 'Print cache status without syncing', false)
-    .option(
-      '--clear',
-      'Delete the local cache; next command re-downloads',
-      false,
-    )
+    .option('--clear', 'Clear cache metadata; retain local budget files', false)
     .action(async (cmdOpts: SyncCmdOpts) => {
       const opts = program.opts();
 
