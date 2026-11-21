@@ -94,6 +94,7 @@ export const luno: AdapterRegistration = {
             };
           },
           account.id,
+          true,
         );
         await c.stream(`pending:${account.id}`, async () => {
           const pending = nullableList(

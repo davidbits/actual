@@ -18,7 +18,16 @@ export type PriceSource = {
 
 /** Public market data is independent of private account adapters and credentials. */
 export function createPriceSource(fetcher = globalThis.fetch): PriceSource {
+  const lastRequest = new Map<string, number>();
   async function get(url: string) {
+    const host = new URL(url).hostname;
+    const interval = host === 'api.valr.com' ? 2100 : 200;
+    const pause = Math.max(
+      0,
+      interval - (Date.now() - (lastRequest.get(host) ?? 0)),
+    );
+    if (pause) await new Promise(resolve => setTimeout(resolve, pause));
+    lastRequest.set(host, Date.now());
     const response = await fetcher(url, {
       redirect: 'error',
       signal: AbortSignal.timeout(15000),

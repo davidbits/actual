@@ -37,6 +37,7 @@ export const binance: AdapterRegistration = {
     },
   },
   resources: [
+    { path: '/api/v3/ticker/price', public: true },
     { path: '/api/v3/exchangeInfo', public: true },
     { path: '/api/v3/time', public: true },
     spot('/api/v3/account'),
@@ -247,10 +248,74 @@ export const binance: AdapterRegistration = {
       c.data.holdings = c.data.holdings.filter(
         h => h.accountId !== 'spot' || !earnAssets.has(h.asset),
       );
+      for (const kind of ['flexible', 'locked'] as const) {
+        await collectHistory(c, options, {
+          id: `rewards:${kind}`,
+          accountId: `earn:${kind}`,
+          windowMs: 29 * 86400000,
+          fetch: async (startTime, endTime, cursor) => {
+            const current = Number(cursor ?? 1);
+            const data = object(
+              await request(
+                {
+                  path: `/sapi/v1/simple-earn/${kind}/history/rewardsRecord`,
+                  minIntervalMs: 2000,
+                },
+                {
+                  startTime,
+                  endTime,
+                  current,
+                  size: 100,
+                  type: kind === 'flexible' ? 'ALL' : undefined,
+                },
+              ),
+            );
+            const rows = array(data.rows);
+            return {
+              events: rows.map(row => ({
+                id: `reward:${kind}:${string(row.positionId ?? row.projectId ?? row.asset)}:${string(row.time)}:${string(row.type)}`,
+                accountId: `earn:${kind}`,
+                stream: `rewards:${kind}`,
+                timestamp: timestamp(row.time),
+                type: 'staking-reward',
+                status: 'booked' as const,
+                postings: [
+                  {
+                    asset: asset(row.asset),
+                    quantity: amount(row.rewards ?? row.amount),
+                    role: 'reward' as const,
+                  },
+                ],
+              })),
+              next: rows.length === 100 ? String(current + 1) : undefined,
+            };
+          },
+        });
+      }
       const markets = new Map<string, { base: string; quote: string }>();
+      const discovered: string[] = [];
+      await c.stream('market-discovery', async () => {
+        const catalog = array(
+          await request({ path: '/api/v3/ticker/price', public: true }),
+        );
+        const offset = Number(options.cursors['market-discovery'] ?? '0');
+        if (!Number.isSafeInteger(offset) || offset < 0) {
+          throw new Error('Invalid discovery cursor');
+        }
+        discovered.push(
+          ...catalog.slice(offset, offset + 50).map(row => string(row.symbol)),
+        );
+        c.data.cursors['market-discovery'] = String(
+          offset + 50 >= catalog.length ? 0 : offset + 50,
+        );
+      });
+      const known = Object.keys(options.cursors)
+        .filter(key => key.startsWith('trades:'))
+        .map(key => key.slice(7));
       const candidates = [
         ...new Set([
           ...options.symbols,
+          ...known,
           ...c.data.holdings
             .filter(
               h =>
@@ -259,8 +324,9 @@ export const binance: AdapterRegistration = {
                 /^[A-Z0-9]{1,30}$/.test(h.asset),
             )
             .map(h => h.asset + 'USDT'),
+          ...discovered,
         ]),
-      ].slice(0, 100);
+      ];
       for (const symbol of candidates) {
         await c.stream(`market:${symbol}`, async () => {
           for (const row of array(
@@ -278,15 +344,7 @@ export const binance: AdapterRegistration = {
           }
         });
       }
-      const held = new Set(
-        c.data.holdings.filter(h => h.quantity !== '0').map(h => h.asset),
-      );
-      const symbols = options.symbols.length
-        ? options.symbols
-        : [...markets]
-            .filter(([, m]) => held.has(m.base) && m.quote === 'USDT')
-            .map(([symbol]) => symbol)
-            .slice(0, 100);
+      const symbols = [...markets.keys()];
       for (const symbol of symbols) {
         await c.pages(
           `trades:${symbol}`,
@@ -349,7 +407,7 @@ export const binance: AdapterRegistration = {
         stream: 'symbol-inventory',
         status: 'partial',
         reason:
-          'Current symbols are discovered automatically. Sold and delisted pairs require statement or explicit symbol backfill.',
+          'Available markets are scanned in bounded batches, including sold assets. Delisted pairs still require statement or explicit symbol backfill.',
       });
       for (const kind of ['deposit', 'withdraw'] as const) {
         const path =

@@ -75,5 +75,21 @@ describe('exact portfolio accounting', () => {
       cursors: {},
     };
     expect(() => historicalHoldings(collection, [], 50)).toThrow('Incomplete');
+    collection.coverage.push({
+      stream: 'deposits',
+      accountId: 'a',
+      status: 'ok',
+      from: 0,
+      through: 100,
+    });
+    expect(() => historicalHoldings(collection, [], 50)).toThrow('Incomplete');
+    collection.coverage[0].balanceHistory = true;
+    expect(historicalHoldings(collection, [], 50)[0].quantity).toBe('1');
+    collection.accounts.push({
+      id: 'sold',
+      name: 'Empty wallet',
+      product: 'spot',
+    });
+    expect(() => historicalHoldings(collection, [], 50)).toThrow('Incomplete');
   });
 });

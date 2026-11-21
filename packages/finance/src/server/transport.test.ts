@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { createProviderFactory, exchangeFactory } from './factory';
-import { parseExactJson } from './json';
+import { parseExactJson, timestamp } from './json';
 import { createTransport, signBitget, signValr } from './transport';
 
 describe('provider transport boundaries', () => {
@@ -79,4 +79,10 @@ describe('provider transport boundaries', () => {
       'private-fixture',
     );
   });
+});
+
+it('interprets provider UTC date-times independently of host timezone', () => {
+  expect(timestamp('2025-01-02 03:04:05')).toBe(
+    Date.parse('2025-01-02T03:04:05Z'),
+  );
 });

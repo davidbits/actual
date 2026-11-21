@@ -27,6 +27,12 @@ export function createCollector(options: CollectOptions) {
     };
     try {
       await action();
+      for (const row of data.holdings.slice(checkpoint.holdings)) {
+        row.stream ??= name;
+      }
+      for (const row of data.positions.slice(checkpoint.positions)) {
+        row.stream ??= name;
+      }
       if (
         !data.coverage.some(
           c =>
@@ -58,6 +64,7 @@ export function createCollector(options: CollectOptions) {
     name: string,
     fetch: (cursor: string | undefined) => Promise<EventPage>,
     accountId?: string,
+    balanceHistory = false,
   ) {
     await stream(
       name,
@@ -87,7 +94,12 @@ export function createCollector(options: CollectOptions) {
           through: options.through,
         });
       },
-      { accountId, from: options.from, through: options.through },
+      {
+        accountId,
+        balanceHistory,
+        from: options.from,
+        through: options.through,
+      },
     );
   }
   function unsupported(stream: string, reason: string) {

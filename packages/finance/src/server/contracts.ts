@@ -17,6 +17,7 @@ export type Resource = {
   path: string;
   public?: boolean;
   subaccountId?: string;
+  minIntervalMs?: number;
 };
 
 export type Request = (

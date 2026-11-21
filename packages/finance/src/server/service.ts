@@ -118,20 +118,36 @@ export function createFinanceService(dependencies: {
             cursors: previous?.cursors ?? {},
             maxPages: 10,
           });
-        const failedAccounts = new Set(
-          fresh.coverage
-            .filter(c => c.status === 'error')
-            .map(c => c.accountId),
-        );
         const freshAccounts = new Set(
-          fresh.accounts.filter(a => !failedAccounts.has(a.id)).map(a => a.id),
+          fresh.accounts
+            .filter(
+              account =>
+                !fresh.coverage.some(
+                  coverage =>
+                    coverage.status === 'error' &&
+                    (coverage.stream === 'balances' ||
+                      coverage.stream === `balances:${account.id}` ||
+                      coverage.stream === account.id),
+                ),
+            )
+            .map(account => account.id),
         );
         const events = new Map(
           (previous?.events ?? []).map(event => [event.id, event]),
         );
         for (const event of fresh.events) events.set(event.id, event);
+        const completeStreams = new Set(
+          fresh.coverage.filter(c => c.status === 'ok').map(c => c.stream),
+        );
+        const holdingKey = (h: Collection['holdings'][number]) =>
+          `${h.stream ?? ''}:${h.accountId}:${h.asset}`;
+        const freshKeys = new Set(fresh.holdings.map(holdingKey));
         const retained = (previous?.holdings ?? [])
-          .filter(h => !freshAccounts.has(h.accountId))
+          .filter(h =>
+            h.stream
+              ? !completeStreams.has(h.stream) && !freshKeys.has(holdingKey(h))
+              : !freshAccounts.has(h.accountId),
+          )
           .map(h => ({
             ...h,
             observedAt: h.observedAt ?? previous?.timestamp,
@@ -144,6 +160,16 @@ export function createFinanceService(dependencies: {
           ...fresh,
           accounts: [...accounts.values()],
           holdings: [...retained, ...fresh.holdings],
+          positions: [
+            ...(previous?.positions ?? []).filter(
+              p =>
+                !fresh.positions.some(f => f.id === p.id) &&
+                (p.stream
+                  ? !completeStreams.has(p.stream)
+                  : !freshAccounts.has(p.accountId)),
+            ),
+            ...fresh.positions,
+          ],
           events: [...events.values()],
         };
         if (
@@ -159,7 +185,7 @@ export function createFinanceService(dependencies: {
           {
             ...entry,
             lastAttempt: now(),
-            lastSuccess: fresh.holdings.length ? now() : entry.lastSuccess,
+            lastSuccess: fresh.accounts.length ? now() : entry.lastSuccess,
             error: errorCount
               ? `${errorCount} provider streams need attention`
               : undefined,
@@ -184,7 +210,12 @@ export function createFinanceService(dependencies: {
       ...new Set(
         Object.values(current.collections).flatMap(c =>
           c.holdings
-            .filter(h => h.quantity !== '0' || (h.debt && h.debt !== '0'))
+            .filter(
+              h =>
+                h.quantity !== '0' ||
+                (h.debt && h.debt !== '0') ||
+                (h.unrealizedPnl && h.unrealizedPnl !== '0'),
+            )
             .map(h => h.asset),
         ),
       ),
@@ -255,7 +286,12 @@ export function createFinanceService(dependencies: {
         ...new Set(
           Object.values(historical.collections).flatMap(c =>
             c.holdings
-              .filter(h => h.quantity !== '0' || (h.debt && h.debt !== '0'))
+              .filter(
+                h =>
+                  h.quantity !== '0' ||
+                  (h.debt && h.debt !== '0') ||
+                  (h.unrealizedPnl && h.unrealizedPnl !== '0'),
+              )
               .map(h => h.asset),
           ),
         ),

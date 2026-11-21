@@ -47,15 +47,27 @@ export function parseFinanceImport(input: unknown): {
     id: text(a.id),
     name: text(a.name),
     product: text(a.product),
+    parentId: a.parentId === undefined ? undefined : text(a.parentId),
   }));
   const ids = new Set(accounts.map(a => a.id));
+  if (ids.size !== accounts.length) {
+    throw new Error('Duplicate account IDs in import');
+  }
+  if (accounts.some(a => a.parentId && !ids.has(a.parentId))) {
+    throw new Error('Unknown parent account');
+  }
   const events: FinanceEvent[] = list(source.events ?? [], 100000).map(e => ({
     id: text(e.id),
     accountId: text(e.accountId),
     stream: text(e.stream),
     timestamp: instant(e.timestamp),
     type: text(e.type),
-    status: e.status === 'pending' ? 'pending' : 'booked',
+    status:
+      e.status === 'pending'
+        ? 'pending'
+        : e.status === 'booked'
+          ? 'booked'
+          : invalidStatus(),
     postings: list(e.postings, 100).map(p => {
       const role = p.role;
       if (
@@ -72,14 +84,38 @@ export function parseFinanceImport(input: unknown): {
     }),
     reference: e.reference === undefined ? undefined : text(e.reference),
     description: e.description === undefined ? undefined : text(e.description),
+    transactionHash:
+      e.transactionHash === undefined ? undefined : text(e.transactionHash),
   }));
   const holdings = list(source.holdings ?? [], 10000).map(h => ({
+    stream: h.stream === undefined ? undefined : text(h.stream),
     accountId: text(h.accountId),
     asset: text(h.asset),
     quantity: quantity(h.quantity),
     debt: h.debt === undefined ? undefined : quantity(h.debt),
+    available: h.available === undefined ? undefined : quantity(h.available),
+    unrealizedPnl:
+      h.unrealizedPnl === undefined ? undefined : quantity(h.unrealizedPnl),
+    observedAt: h.observedAt === undefined ? undefined : instant(h.observedAt),
   }));
-  if ([...events, ...holdings].some(row => !ids.has(row.accountId))) {
+  const positions = list(source.positions ?? [], 10000).map(p => ({
+    stream: p.stream === undefined ? undefined : text(p.stream),
+    id: text(p.id),
+    accountId: text(p.accountId),
+    symbol: text(p.symbol),
+    settlementAsset: text(p.settlementAsset),
+    quantity: quantity(p.quantity),
+    entryPrice: quantity(p.entryPrice),
+    markPrice: p.markPrice === undefined ? undefined : quantity(p.markPrice),
+    unrealizedPnl: quantity(p.unrealizedPnl),
+    side: text(p.side),
+  }));
+  if (new Set(positions.map(p => p.id)).size !== positions.length) {
+    throw new Error('Duplicate position IDs in import');
+  }
+  if (
+    [...events, ...holdings, ...positions].some(row => !ids.has(row.accountId))
+  ) {
     throw new Error('Unknown imported account');
   }
   if (new Set(events.map(e => e.id)).size !== events.length) {
@@ -92,7 +128,7 @@ export function parseFinanceImport(input: unknown): {
       accounts,
       holdings,
       events,
-      positions: [],
+      positions,
       cursors: {},
       coverage: [
         {
@@ -111,4 +147,8 @@ export function parseFinanceImport(input: unknown): {
       source: text(p.source),
     })),
   };
+}
+
+function invalidStatus(): never {
+  throw new Error('Invalid event status');
 }

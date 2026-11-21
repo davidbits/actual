@@ -145,6 +145,7 @@ export const valr: AdapterRegistration = {
             };
           },
           account.id,
+          !options.cursors[`ledger:${account.id}`],
         );
         for (const [kind, path] of [
           ['futures', '/v1/positions/open'],

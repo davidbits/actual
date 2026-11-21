@@ -69,14 +69,16 @@ export function historicalHoldings(
       event.timestamp > at &&
       event.timestamp <= collection.timestamp,
   );
-  const accounts = new Set(
-    collection.holdings.map(holding => holding.accountId),
-  );
+  const accounts = new Set([
+    ...collection.accounts.map(account => account.id),
+    ...relevant.map(event => event.accountId),
+  ]);
   for (const account of accounts) {
     if (
       !collection.coverage.some(
         c =>
           c.accountId === account &&
+          c.balanceHistory === true &&
           c.status === 'ok' &&
           c.from !== undefined &&
           c.from <= at &&
@@ -89,6 +91,9 @@ export function historicalHoldings(
   // Position/debt history cannot be inferred from spot balance movements.
   if (
     collection.positions.length ||
+    events.some(event =>
+      /FUTURES|PERP|MARGIN|BORROW|REPAY|LIQUIDATION/i.test(event.type),
+    ) ||
     collection.holdings.some(h => h.debt && h.debt !== '0')
   ) {
     throw new Error('Historical debt and positions require a dated checkpoint');

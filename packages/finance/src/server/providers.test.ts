@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { binance } from './providers/binance';
 import { bitget } from './providers/bitget';
 import { luno } from './providers/luno';
 import { valr } from './providers/valr';
@@ -14,6 +15,46 @@ const options = {
 };
 
 describe('provider account and paging contracts', () => {
+  it('discovers sold Binance symbols and preserves the three legs of spot fills', async () => {
+    const adapter = binance.create({
+      request: async (resource, params) => {
+        if (resource.path === '/api/v3/ticker/price') {
+          return [{ symbol: 'SOLDUSDT' }];
+        }
+        if (resource.path === '/api/v3/exchangeInfo') {
+          return {
+            symbols: [
+              { symbol: params?.symbol, baseAsset: 'SOLD', quoteAsset: 'USDT' },
+            ],
+          };
+        }
+        if (resource.path === '/api/v3/myTrades') {
+          return [
+            {
+              id: '9007199254740995',
+              orderId: 'order',
+              time: '1',
+              isBuyer: false,
+              qty: '0.001',
+              quoteQty: '10',
+              commission: '0.01',
+              commissionAsset: 'USDT',
+            },
+          ];
+        }
+        if (resource.path === '/api/v3/account') return { balances: [] };
+        throw new ProviderError('unavailable', 403);
+      },
+    });
+    const data = await adapter.collect(options);
+    expect(data.events[0].postings.map(p => p.quantity)).toEqual([
+      '-0.001',
+      '10',
+      '-0.01',
+    ]);
+    expect(data.cursors['trades:SOLDUSDT']).toBe('9007199254740996');
+    expect(data.cursors['market-discovery']).toBe('0');
+  });
   it('keeps same-currency Luno wallets distinct and handles empty nullable lists', async () => {
     const adapter = luno.create({
       request: async resource => {

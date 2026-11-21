@@ -38,8 +38,12 @@ export function amount(value: unknown, fallback?: string): string {
 }
 
 export function timestamp(value: unknown): number {
-  const n = Number(string(value));
-  const parsed = Number.isFinite(n) ? n : Date.parse(string(value));
+  const raw = string(value);
+  const n = Number(raw);
+  const iso = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(raw)
+    ? raw.replace(' ', 'T') + 'Z'
+    : raw;
+  const parsed = Number.isFinite(n) ? n : Date.parse(iso);
   if (!Number.isSafeInteger(parsed) || parsed < 0) {
     throw new Error('Invalid provider timestamp');
   }

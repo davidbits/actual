@@ -42,6 +42,7 @@ describe('finance collection service', () => {
       },
     };
     let calls = 0;
+    let mode = 'normal';
     const service = createFinanceService({
       repository,
       canRead: c => c.userId === 'owner',
@@ -60,9 +61,41 @@ describe('finance collection service', () => {
             return {
               timestamp: 1000,
               accounts: [{ id: 'a', name: 'Wallet', product: 'spot' }],
-              holdings: [{ accountId: 'a', asset: 'ZAR', quantity: '1' }],
-              positions: [],
-              coverage: [],
+              holdings:
+                mode === 'empty'
+                  ? []
+                  : [
+                      {
+                        accountId: 'a',
+                        asset: 'ZAR',
+                        quantity: '1',
+                        stream: 'balances',
+                      },
+                    ],
+              positions:
+                mode !== 'normal'
+                  ? []
+                  : [
+                      {
+                        id: 'p',
+                        accountId: 'a',
+                        symbol: 'BTCZAR',
+                        settlementAsset: 'ZAR',
+                        quantity: '1',
+                        entryPrice: '1',
+                        unrealizedPnl: '0',
+                        side: 'long',
+                        stream: 'positions',
+                      },
+                    ],
+              coverage: [
+                { stream: 'balances', status: 'ok' },
+                {
+                  stream: 'positions',
+                  accountId: 'a',
+                  status: mode === 'positions-fail' ? 'error' : 'ok',
+                },
+              ],
               cursors: {},
               events: [
                 {
@@ -96,6 +129,9 @@ describe('finance collection service', () => {
     expect(
       service.portfolio('budget').collections[connection.id].events,
     ).toHaveLength(1);
+    expect(
+      service.portfolio('budget').collections[connection.id].holdings,
+    ).toHaveLength(1);
     expect(JSON.stringify(service.portfolio('budget'))).not.toContain(
       'synthetic-secret',
     );
@@ -103,5 +139,22 @@ describe('finance collection service', () => {
     locks.add(connection.id);
     await service.sync('budget');
     expect(calls).toBe(2);
+    locks.delete(connection.id);
+    mode = 'positions-fail';
+    await service.sync('budget');
+    expect(
+      service.portfolio('budget').collections[connection.id].positions,
+    ).toHaveLength(1);
+    expect(
+      service.portfolio('budget').collections[connection.id].holdings,
+    ).toHaveLength(1);
+    mode = 'empty';
+    await service.sync('budget');
+    expect(
+      service.portfolio('budget').collections[connection.id].holdings,
+    ).toEqual([]);
+    expect(
+      service.portfolio('budget').collections[connection.id].positions,
+    ).toEqual([]);
   });
 });

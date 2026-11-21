@@ -142,7 +142,10 @@ export function createTransport(
       const clock = await execute(definition.clock.resource);
       offset = definition.clock.read(clock) - Math.floor((start + now()) / 2);
     }
-    const pause = Math.max(0, 250 - (now() - lastRequest));
+    const pause = Math.max(
+      0,
+      Math.max(500, resource.minIntervalMs ?? 0) - (now() - lastRequest),
+    );
     if (pause) await wait(pause);
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(values)) {

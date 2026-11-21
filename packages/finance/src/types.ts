@@ -9,6 +9,7 @@ export type FinanceAccount = {
 };
 
 export type Holding = {
+  stream?: string;
   observedAt?: number;
   accountId: string;
   asset: string;
@@ -19,6 +20,7 @@ export type Holding = {
 };
 
 export type Position = {
+  stream?: string;
   id: string;
   accountId: string;
   symbol: string;
@@ -52,6 +54,8 @@ export type FinanceEvent = {
 
 export type Coverage = {
   stream: string;
+  /** This stream contains every booked balance movement, not only trades/deposits. */
+  balanceHistory?: boolean;
   accountId?: string;
   status: 'ok' | 'partial' | 'error' | 'unsupported';
   reason?: string;

@@ -1,4 +1,4 @@
-import { add } from '#decimal';
+import { add, negate } from '#decimal';
 import { createCollector } from '#server/collector';
 import type { AdapterRegistration, RequestParams } from '#server/contracts';
 import { collectHistory } from '#server/history';
@@ -191,10 +191,65 @@ export const bitget: AdapterRegistration = {
             for (const row of rows) {
               c.data.holdings.push({
                 accountId: `savings:${periodType}`,
-                asset: asset(row.coin),
+                asset: asset(row.productCoin ?? row.coin),
                 quantity: amount(row.holdAmount),
               });
             }
+            if (rows.length === 100) {
+              c.data.coverage.push({
+                stream: `savings:${periodType}`,
+                status: 'partial',
+                reason:
+                  'Savings assets page limit reached; verify with statement',
+              });
+            }
+          });
+          await collectHistory(c, options, {
+            id: `savings-records:${periodType}`,
+            accountId: `savings:${periodType}`,
+            windowMs: 89 * 86400000,
+            fetch: async (startTime, endTime, cursor) => {
+              const data = object(
+                await get('/api/v2/earn/savings/records', {
+                  periodType,
+                  startTime,
+                  endTime,
+                  idLessThan: cursor,
+                  limit: 100,
+                }),
+              );
+              const rows = array(data.resultList);
+              return {
+                events: rows.map(row => {
+                  const type = string(row.orderType);
+                  const interest = type === 'pay_interest';
+                  return {
+                    id: `savings:${periodType}:${string(row.orderId)}:${type}`,
+                    accountId: `savings:${periodType}`,
+                    stream: `savings-records:${periodType}`,
+                    timestamp: timestamp(row.ts),
+                    type,
+                    status: 'booked' as const,
+                    postings: [
+                      {
+                        asset: asset(
+                          interest ? row.settleCoinName : row.coinName,
+                        ),
+                        quantity: ['redeem', 'deduction'].includes(type)
+                          ? negate(amount(row.amount))
+                          : amount(row.amount),
+                        role: interest
+                          ? ('reward' as const)
+                          : type === 'deduction'
+                            ? ('interest' as const)
+                            : ('principal' as const),
+                      },
+                    ],
+                  };
+                }),
+                next: rows.length === 100 ? string(data.endId) : undefined,
+              };
+            },
           });
         }
       }
