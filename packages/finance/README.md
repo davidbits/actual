@@ -7,7 +7,7 @@ code, fixtures, browser storage, or budget preferences.
 
 ## Use in Actual
 
-Open **Bank Sync → Exchange portfolio**. Add a connection using a read-only
+Open **Exchanges** below accounts in the sidebar, or select an individual exchange to view its holdings and activity. **Bank Sync → Exchange portfolio** also opens the portfolio. Add a connection using a read-only
 API key (and the separate API passphrase for Bitget). Set the earliest history
 date and, for Binance, any historically traded symbols that cannot be discovered
 from current holdings. Save, then select **Sync exchanges**.
@@ -59,10 +59,15 @@ history completeness. The latest 2,000 events per connection are cached in the
 budget; the server keeps collected history.
 
 Current prices use local Luno ZAR markets, then Binance/USDT crossed with an
-observed USDT/ZAR rate. Historical local candles can fall back to VALR; cross
-rates use completed candles only. Fiat FX uses dated ECB reference rates via
+observed USDT/ZAR rate. A supplemental market-provider registry adds Kraken
+xStocks token markets crossed with dated USD/ZAR, and Bitget spot markets
+crossed with observed USDT/ZAR. Token markets are resolved from provider
+metadata; ordinary underlying share prices are never substituted. Historical
+local candles can fall back to VALR; token and crypto cross rates use completed
+candles only. Kraken historical coverage is limited to its recent 720 candles. Fiat FX uses dated ECB reference rates via
 EUR. These are reference valuations, not guaranteed execution proceeds or a
-tax filing calculation. Unsupported assets/dates remain visibly unpriced.
+tax filing calculation. Unsupported assets/dates remain visibly unpriced. The screen labels the priced
+balance and names missing assets when the total excludes unpriced holdings.
 
 ## API and CLI
 

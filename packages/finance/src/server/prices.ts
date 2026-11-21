@@ -10,6 +10,12 @@ import {
   string,
   timestamp,
 } from './json';
+import {
+  bitgetSpotPrices,
+  createMarketPriceRegistry,
+  krakenTokenPrices,
+} from './market-prices';
+import type { MarketPriceProvider } from './market-prices';
 
 export type PriceSource = {
   current(assets: string[], quote: string): Promise<Price[]>;
@@ -17,11 +23,16 @@ export type PriceSource = {
 };
 
 /** Public market data is independent of private account adapters and credentials. */
-export function createPriceSource(fetcher = globalThis.fetch): PriceSource {
+export function createPriceSource(
+  fetcher = globalThis.fetch,
+  providers: MarketPriceProvider[] = [krakenTokenPrices, bitgetSpotPrices],
+): PriceSource {
+  const supplement = createMarketPriceRegistry(providers);
   const lastRequest = new Map<string, number>();
   async function get(url: string) {
     const host = new URL(url).hostname;
-    const interval = host === 'api.valr.com' ? 2100 : 200;
+    const interval =
+      host === 'api.valr.com' ? 2100 : host === 'api.kraken.com' ? 1100 : 200;
     const pause = Math.max(
       0,
       interval - (Date.now() - (lastRequest.get(host) ?? 0)),
@@ -77,7 +88,7 @@ export function createPriceSource(fetcher = globalThis.fetch): PriceSource {
           /* A cross-rate source outage must not discard successful local quotes. */
         }
       }
-      for (const asset of new Set(assets)) {
+      for (const asset of new Set([...assets, 'USDT'])) {
         const local = direct.get(asset);
         if (local) {
           prices.push(local);
@@ -95,11 +106,13 @@ export function createPriceSource(fetcher = globalThis.fetch): PriceSource {
         }
       }
       try {
-        prices.push(...(await ecbPrices(assets, now, false, fetcher)));
+        prices.push(
+          ...(await ecbPrices([...assets, 'USD'], now, false, fetcher)),
+        );
       } catch {
         /* Unavailable FX stays unpriced. */
       }
-      return prices;
+      return supplement(assets, prices, get, now, false);
     },
     async historical(assets, quote, at) {
       if (quote !== 'ZAR') throw new Error('No configured quote source');
@@ -165,7 +178,9 @@ export function createPriceSource(fetcher = globalThis.fetch): PriceSource {
         }
       }
       try {
-        prices.push(...(await ecbPrices(assets, at, true, fetcher)));
+        prices.push(
+          ...(await ecbPrices([...assets, 'USD'], at, true, fetcher)),
+        );
       } catch {
         /* Historical FX remains unavailable. */
       }
@@ -203,7 +218,7 @@ export function createPriceSource(fetcher = globalThis.fetch): PriceSource {
           }
         }
       }
-      return prices;
+      return supplement(assets, prices, get, at, true);
     },
   };
 }
