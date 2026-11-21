@@ -329,8 +329,9 @@ class FilterTooltip {
     const fields = this.locator.getByRole('textbox');
 
     await fields.nth(0).fill(from);
-    await fields.nth(0).blur();
+    await fields.nth(0).press('Tab');
     await fields.nth(1).fill(to);
-    await fields.nth(1).blur();
+    await fields.nth(1).press('Tab');
+    await this.applyButton.focus();
   }
 }

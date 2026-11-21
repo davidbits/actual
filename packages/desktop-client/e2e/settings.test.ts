@@ -72,13 +72,10 @@ test.describe('Settings', () => {
 
   test('keeps the global CSS override readable after switching themes', async () => {
     await page.setViewportSize({ width: 1024, height: 900 });
-    await page.route('**/customThemeCatalog.json', route =>
-      route.fulfill({
-        json: [{ name: 'Test theme', repo: 'test/theme', mode: 'light' }],
-      }),
-    );
-    await page.route('**/test/theme/refs/heads/main/actual.css*', route =>
-      route.fulfill({ body: ':root { --color-pageBackground: #eeeeee; }' }),
+    await page.route(
+      '**/actualbudget/demo-theme/refs/heads/main/actual.css*',
+      route =>
+        route.fulfill({ body: ':root { --color-pageBackground: #eeeeee; }' }),
     );
     await expect(async () => {
       await page.evaluate(() => window.Actual.setTheme('light'));
@@ -92,7 +89,7 @@ test.describe('Settings', () => {
     await page
       .getByRole('button', { name: 'Custom theme', exact: true })
       .click();
-    await page.getByRole('button', { name: 'Test theme', exact: true }).click();
+    await page.getByRole('button', { name: 'Demo Theme', exact: true }).click();
     const css = ':root { --color-pageBackground: #abcdef; }';
     await page.getByRole('textbox', { name: 'Custom Theme CSS' }).fill(css);
     await page.getByRole('button', { name: 'Apply', exact: true }).click();
@@ -101,7 +98,7 @@ test.describe('Settings', () => {
     const indicator = page.getByRole('button', {
       name: 'Custom CSS override active — click to edit',
     });
-    let currentTheme = 'Test theme';
+    let currentTheme = 'Demo Theme';
     for (const nextTheme of ['Dark', 'Midnight', 'Light', 'System default']) {
       await page
         .getByRole('button', { name: currentTheme, exact: true })

@@ -102,12 +102,17 @@ test.describe('Rules', () => {
     await editRuleModal.selectField(row, 'date');
     await editRuleModal.selectOp(row, 'is between');
 
-    // Each bound is committed on blur
+    // Commit each bound by moving focus within the modal. Direct blur can
+    // race the date popover's focus restoration while it is opening.
     const bounds = row.getByRole('textbox');
-    await bounds.nth(0).fill('01/01/2020');
-    await bounds.nth(0).blur();
-    await bounds.nth(1).fill('01/31/2020');
-    await bounds.nth(1).blur();
+    await expect(async () => {
+      await bounds.nth(0).fill('01/01/2020');
+      await bounds.nth(0).press('Tab');
+      await bounds.nth(1).fill('01/31/2020');
+      await bounds.nth(1).press('Tab');
+      await expect(bounds.nth(0)).toHaveValue('01/01/2020', { timeout: 1000 });
+      await expect(bounds.nth(1)).toHaveValue('01/31/2020', { timeout: 1000 });
+    }).toPass({ timeout: 5000 });
 
     await editRuleModal.fill({
       actions: [
