@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@actual-app/api": "workspace:*",
+    "@actual-app/finance": "workspace:*",
     "cli-table3": "^0.6.5",
     "commander": "^15.0.0",
     "cosmiconfig": "^10.0.1",
