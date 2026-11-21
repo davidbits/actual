@@ -1,5 +1,4 @@
 import { sendCatch } from '@actual-app/core/platform/client/connection';
-import * as Platform from '@actual-app/core/shared/platform';
 import type {
   AccountEntity,
   SyncServerEnableBankingAccount,
@@ -40,7 +39,6 @@ function _authorize(
               redirectUrl,
               maxConsentValidity,
               psuType,
-              returnToApp: Platform.isNativeMobileApp,
             });
 
             if (resp.error) {

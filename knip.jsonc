@@ -7,7 +7,6 @@
     "nsTypes": "off",
     "duplicates": "off",
   },
-  "ignoreBinaries": ["electron-rebuild"],
   "workspaces": {
     ".": {
       "entry": ["bin/*.mts"],
@@ -23,16 +22,6 @@
         "@jlongster/sql.js",
       ],
     },
-    "packages/ci-actions": {
-      "entry": ["bin/*.ts"],
-      "ignoreBinaries": ["bin/tsx"],
-      "ignoreDependencies": ["extensionless"],
-    },
-    "packages/component-library": {
-      "entry": ["src/icons/index-template.ts", "src/icons/template.ts"],
-      "ignore": ["src/icons/.svgrrc.js", "src/icons/add-attribute.ts"],
-      "ignoreDependencies": ["@svgr/babel-plugin-add-jsx-attribute"],
-    },
     "packages/crdt": {
       "ignore": ["src/proto/**"],
       "ignoreDependencies": ["@bufbuild/protoc-gen-es"],
@@ -45,25 +34,6 @@
         "src/build-shims.js",
       ],
       "ignore": ["playwright.config.d.ts"],
-      "ignoreDependencies": ["plugins-service"],
-    },
-    "packages/desktop-electron": {
-      "entry": [
-        "preload.ts",
-        "server.ts",
-        "afterSignHook.ts",
-        "beforePackHook.ts",
-      ],
-      "ignoreBinaries": ["bin/update-client"],
-      "ignoreDependencies": ["better-sqlite3"],
-    },
-    "packages/docs": {
-      "entry": [
-        "src/theme/**/*.{ts,tsx,js,jsx}",
-        "src/components/**/*.{ts,tsx,js,jsx}",
-        "docs/**/*.{js,jsx}",
-      ],
-      "ignore": ["docusaurus.netlify-config.js"],
     },
     "packages/loot-core": {
       "entry": ["src/**/index-types.ts", "src/mocks/**"],
@@ -77,26 +47,6 @@
         "timers-browserify",
         "util",
       ],
-    },
-    "packages/mobile-client": {
-      "entry": ["bin/*"],
-      // Provided by the JDK and required for Android release signing
-      "ignoreBinaries": ["jarsigner"],
-      "ignore": [
-        "android/app/src/main/assets/**",
-        "ios/App/App/public/**",
-        "ios/DerivedData/**",
-      ],
-      "ignoreDependencies": [
-        "@capacitor/app",
-        "@capacitor/filesystem",
-        "@capacitor/haptics",
-        "@capacitor/share",
-        "@capacitor/splash-screen",
-      ],
-    },
-    "packages/plugins-service": {
-      "entry": ["src/plugin-service-worker.ts"],
     },
     "packages/sync-server": {
       "entry": [

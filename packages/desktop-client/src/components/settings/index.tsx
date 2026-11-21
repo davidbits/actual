@@ -12,25 +12,20 @@ import { theme } from '@actual-app/components/theme';
 import { spacing } from '@actual-app/components/tokens';
 import { View } from '@actual-app/components/view';
 import { listen } from '@actual-app/core/platform/client/connection';
-import { isElectron } from '@actual-app/core/shared/environment';
 
-import { getLatestAppVersion } from '#app/appSlice';
 import { closeBudget } from '#budgetfiles/budgetfilesSlice';
-import { Link } from '#components/common/Link';
-import { Checkbox, FormField, FormLabel } from '#components/forms';
+import { FormField, FormLabel } from '#components/forms';
 import { MOBILE_NAV_HEIGHT } from '#components/mobile/MobileNavTabs';
 import { MobilePageHeader, Page } from '#components/Page';
 import { useServerURL, useServerVersion } from '#components/ServerContext';
 import { useFeatureFlag } from '#hooks/useFeatureFlag';
-import { useGlobalPref } from '#hooks/useGlobalPref';
 import { useMetadataPref } from '#hooks/useMetadataPref';
 import { useSyncedPref } from '#hooks/useSyncedPref';
 import { loadPrefs, saveSyncedPrefs } from '#prefs/prefsSlice';
-import { useDispatch, useSelector } from '#redux';
+import { useDispatch } from '#redux';
 
 import { ApiKeys } from './ApiKeys';
 import { AuthSettings } from './AuthSettings';
-import { Backups } from './Backups';
 import { BudgetTypeSettings } from './BudgetTypeSettings';
 import { CurrencySettings } from './Currency';
 import { EncryptionSettings } from './Encryption';
@@ -52,15 +47,6 @@ function About() {
   const { t } = useTranslation();
   const serverURL = useServerURL();
   const version = useServerVersion();
-  const versionInfo = useSelector(state => state.app.versionInfo);
-  const dispatch = useDispatch();
-  const [notifyWhenUpdateIsAvailable, setNotifyWhenUpdateIsAvailablePref] =
-    useGlobalPref('notifyWhenUpdateIsAvailable', () => {
-      void dispatch(getLatestAppVersion());
-    });
-  const [showNewsFeed, setShowNewsFeedPref] = useGlobalPref('showNewsFeed');
-  const isNewsFeedEnabled = Boolean(showNewsFeed);
-
   return (
     <SettingsGroup
       title={t('About')}
@@ -89,63 +75,6 @@ function About() {
           }
         />
       )}
-      <SettingsRow
-        title={t('Updates')}
-        description={
-          notifyWhenUpdateIsAvailable &&
-          (versionInfo?.isOutdated ? (
-            <Trans>New version available: {versionInfo.latestVersion}</Trans>
-          ) : (
-            <Text style={{ color: theme.noticeText, fontWeight: 600 }}>
-              <Trans>You're up to date!</Trans>
-            </Text>
-          ))
-        }
-        control={
-          <View style={{ flexDirection: 'row', gap: spacing.md }}>
-            <Link
-              variant="external"
-              to="https://actualbudget.org/docs/releases"
-              linkColor="purple"
-            >
-              <Trans>Release Notes</Trans>
-            </Link>
-            {isNewsFeedEnabled && (
-              <Link variant="internal" to="/notifications">
-                <Trans>Notifications</Trans>
-              </Link>
-            )}
-          </View>
-        }
-      />
-      <SettingsRow
-        htmlFor="settings-notifyWhenUpdateIsAvailable"
-        title={t('Update notifications')}
-        description={t('Display a notification when updates are available.')}
-        control={
-          <Checkbox
-            id="settings-notifyWhenUpdateIsAvailable"
-            checked={notifyWhenUpdateIsAvailable}
-            onChange={e =>
-              setNotifyWhenUpdateIsAvailablePref(e.currentTarget.checked)
-            }
-            style={{ marginRight: 0 }}
-          />
-        }
-      />
-      <SettingsRow
-        htmlFor="settings-showNewsFeed"
-        title={t('In-app notifications')}
-        description={t('Show release notes and announcements in the app.')}
-        control={
-          <Checkbox
-            id="settings-showNewsFeed"
-            checked={showNewsFeed}
-            onChange={e => setShowNewsFeedPref(e.currentTarget.checked)}
-            style={{ marginRight: 0 }}
-          />
-        }
-      />
     </SettingsGroup>
   );
 }
@@ -300,7 +229,6 @@ export function GeneralSettings() {
         </SettingsGroup>
       )}
       <SettingsGroup title={t('Data')}>
-        {isElectron() && <Backups />}
         <ExportBudget />
       </SettingsGroup>
     </SettingsSections>

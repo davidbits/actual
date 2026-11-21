@@ -2,7 +2,7 @@
 export type SqlParam = string | number | null;
 
 // Opaque handles for an open database and a prepared statement. Each
-// platform module (web wasm, web legacy sql.js, electron better-sqlite3)
+// platform module (web wasm, web legacy sql.js, Node better-sqlite3)
 // casts to its own concrete type internally; callers only pass them back
 // into that same module.
 declare const databaseBrand: unique symbol;

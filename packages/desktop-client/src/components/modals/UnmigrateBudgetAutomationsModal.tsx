@@ -10,7 +10,6 @@ import type { CleanupTemplate } from '@actual-app/core/types/models/cleanup-temp
 import type { Template } from '@actual-app/core/types/models/templates';
 
 import { cleanupToNotes } from '#components/budget/goals/cleanupModel';
-import { Link } from '#components/common/Link';
 import { Modal, ModalCloseButton, ModalHeader } from '#components/common/Modal';
 import { Notes } from '#components/Notes';
 import { useCategories } from '#hooks/useCategories';
@@ -175,15 +174,7 @@ export function UnmigrateBudgetAutomationsModal({
               <View style={{ display: 'inline-block', minHeight: 'unset' }}>
                 <Trans>
                   If the automation UI isn&apos;t working for you, you can
-                  temporarily switch back to notes-based automations. Please let
-                  us know your feedback about what&apos;s not working on the{' '}
-                  <Link
-                    variant="external"
-                    to="https://github.com/actualbudget/actual/issues/"
-                  >
-                    feedback issue
-                  </Link>
-                  .
+                  temporarily switch back to notes-based automations.
                 </Trans>
               </View>
               <View>

@@ -18,7 +18,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { setAppState, sync } from '#app/appSlice';
 import { closeBudget, loadBudget } from '#budgetfiles/budgetfilesSlice';
 import { handleGlobalEvents } from '#global-events';
-import { useIsTestEnv } from '#hooks/useIsTestEnv';
 import { useMetadataPref } from '#hooks/useMetadataPref';
 import { useOnVisible } from '#hooks/useOnVisible';
 import { SpreadsheetProvider } from '#hooks/useSpreadsheet';
@@ -38,7 +37,6 @@ import { ExposeNavigate } from '#util/router-tools';
 import { AppBackground } from './AppBackground';
 import { BudgetMonthCountProvider } from './budget/BudgetMonthCountContext';
 import { AriaRouterProvider } from './common/AriaRouterProvider';
-import { DevelopmentTopBar } from './DevelopmentTopBar';
 import { FatalError } from './FatalError';
 import { FinancesApp } from './FinancesApp';
 import { ManagementApp } from './manager/ManagementApp';
@@ -178,7 +176,6 @@ function ErrorFallback({ error }: FallbackProps) {
 
 export function App() {
   const store = useStore();
-  const isTestEnv = useIsTestEnv();
   const queryClient = useQueryClient();
 
   useEffect(() => handleGlobalEvents(store, queryClient), [store, queryClient]);
@@ -234,9 +231,6 @@ export function App() {
                       }}
                     >
                       <ErrorBoundary FallbackComponent={ErrorFallback}>
-                        {import.meta.env.REACT_APP_REVIEW_ID && !isTestEnv && (
-                          <DevelopmentTopBar />
-                        )}
                         <AppInner />
                       </ErrorBoundary>
                       <ThemeStyle />

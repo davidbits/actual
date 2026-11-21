@@ -111,9 +111,7 @@ export function MobileScheduleEditPage() {
     if (res.error) {
       dispatch({
         type: 'form-error',
-        error: t(
-          'An error occurred while saving. Please visit https://actualbudget.org/contact/ for support.',
-        ),
+        error: t('An error occurred while saving.'),
       });
       return;
     }

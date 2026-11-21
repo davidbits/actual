@@ -34,20 +34,6 @@ module.exports = {
       dependsOn: ['^build'],
       cache: false,
     },
-    'build:mobile': {
-      type: 'npmScript',
-      dependsOn: ['^build'],
-      cache: false,
-      weight: CONCURRENCY,
-    },
-    'mobile-client#build': {
-      type: 'npmScript',
-      dependsOn: ['^build', '@actual-app/web#build:mobile'],
-      cache: true,
-      options: {
-        outputGlob: BUILD_OUTPUT_GLOBS,
-      },
-    },
   },
   cacheOptions: {
     cacheStorageConfig: {

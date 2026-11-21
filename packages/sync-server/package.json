@@ -41,7 +41,7 @@
     "#app-sync/*": "./src/app-sync/*.js",
     "#scripts/*": "./src/scripts/*.js",
     "#services/*": "./src/services/*.js",
-    "#util/title": "./src/util/title/index.js",
+    "#util/title": "./src/util/title/index.ts",
     "#util/*": "./src/util/*.ts"
   },
   "publishConfig": {

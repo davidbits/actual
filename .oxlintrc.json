@@ -423,12 +423,6 @@
       }
     },
     {
-      "files": ["packages/desktop-electron/**/*"],
-      "rules": {
-        "react/rules-of-hooks": "off"
-      }
-    },
-    {
       // Grandfathered pre-existing enums; new enums are disallowed everywhere else.
       "files": [
         "packages/component-library/src/tokens.ts",
@@ -439,7 +433,7 @@
       }
     },
     {
-      "files": ["**/*.test.{js,ts,jsx,tsx}", "packages/docs/**/*"],
+      "files": ["**/*.test.{js,ts,jsx,tsx}"],
       "rules": {
         "actual/no-untranslated-strings": "off",
         "actual/prefer-logger-over-console": "off",
@@ -461,12 +455,6 @@
       ],
       "rules": {
         "import/no-default-export": "off"
-      }
-    },
-    {
-      "files": ["packages/docs/**/*"],
-      "rules": {
-        "actual/no-anchor-tag": "off"
       }
     },
     {
@@ -502,9 +490,7 @@
       "files": [
         "packages/api/**/*",
         "packages/desktop-client/**/*",
-        "packages/desktop-electron/**/*",
         "packages/loot-core/**/*",
-        "packages/plugins-service/**/*",
         "packages/sync-server/**/*"
       ],
       "rules": {

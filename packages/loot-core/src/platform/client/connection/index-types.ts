@@ -95,3 +95,5 @@ export type ServerPush = typeof serverPush;
 
 export declare function clearServer(): Promise<void>;
 export type ClearServer = typeof clearServer;
+
+export declare function isOwnRequest(id: string): boolean;

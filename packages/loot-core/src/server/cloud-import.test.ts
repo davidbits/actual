@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import * as fetchClient from '#platform/server/fetch';
 import * as fs from '#platform/server/fs';
 import * as sqlite from '#platform/server/sqlite';
 import type { ServerHandlers } from '#types/server-handlers';
@@ -150,15 +151,12 @@ it('does not combine files from different archive directories', async () => {
 
 it('rejects cloud metadata describing a different file than the one requested', async () => {
   const before = await fs.listDir(directory);
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async url =>
-      String(url).endsWith('/get-user-file-info')
-        ? new Response(
-            JSON.stringify({ status: 'ok', data: { fileId: 'other-file' } }),
-          )
-        : new Response(new Uint8Array(archive('victim'))),
-    ),
+  vi.spyOn(fetchClient, 'fetch').mockImplementation(async url =>
+    String(url).endsWith('/get-user-file-info')
+      ? new Response(
+          JSON.stringify({ status: 'ok', data: { fileId: 'other-file' } }),
+        )
+      : new Response(new Uint8Array(archive('victim'))),
   );
   await expect(download('requested-file')).rejects.toMatchObject({
     reason: 'mismatched-cloud-file',

@@ -3,6 +3,8 @@ import { afterEach, expect, test, vi } from 'vitest';
 // oxlint-disable-next-line no-restricted-imports
 import { send } from './index.api';
 
+vi.unmock('#platform/server/connection');
+
 afterEach(() => {
   vi.restoreAllMocks();
 });

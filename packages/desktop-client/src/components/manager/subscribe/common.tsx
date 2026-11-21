@@ -4,14 +4,9 @@ import { useLocation } from 'react-router';
 
 import { theme } from '@actual-app/components/theme';
 import { send } from '@actual-app/core/platform/client/connection';
-import { isElectron } from '@actual-app/core/shared/environment';
 import type { Handlers } from '@actual-app/core/types/handlers';
 
-import {
-  useSetLoginMethods,
-  useSetMultiuserEnabled,
-  useSetServerURL,
-} from '#components/ServerContext';
+import { useSetLoginMethods, useSetServerURL } from '#components/ServerContext';
 import { useNavigate } from '#hooks/useNavigate';
 import { useDispatch } from '#redux';
 import { loggedIn } from '#users/usersSlice';
@@ -31,7 +26,6 @@ export function useBootstrapped(redirect = true) {
   const location = useLocation();
   const dispatch = useDispatch();
   const setServerURL = useSetServerURL();
-  const setMultiuserEnabled = useSetMultiuserEnabled();
   const setLoginMethods = useSetLoginMethods();
 
   useEffect(() => {
@@ -70,7 +64,7 @@ export function useBootstrapped(redirect = true) {
 
           const isTransientFailure =
             'error' in result && result.error === 'network-failure';
-          if (isElectron() || isTransientFailure) {
+          if (isTransientFailure) {
             void navigate('/config-server');
             return;
           }
@@ -92,7 +86,6 @@ export function useBootstrapped(redirect = true) {
           return;
         }
 
-        setMultiuserEnabled(result.multiuser);
         setLoginMethods(result.availableLoginMethods);
 
         if (result.bootstrapped) {
@@ -114,7 +107,6 @@ export function useBootstrapped(redirect = true) {
           ensure(`/login`);
 
           if ('hasServer' in result && result.hasServer) {
-            setMultiuserEnabled(result.multiuser);
             setLoginMethods(result.availableLoginMethods);
           }
         } else {
@@ -127,15 +119,7 @@ export function useBootstrapped(redirect = true) {
     return () => {
       isCancelled = true;
     };
-  }, [
-    dispatch,
-    location,
-    navigate,
-    redirect,
-    setLoginMethods,
-    setMultiuserEnabled,
-    setServerURL,
-  ]);
+  }, [dispatch, location, navigate, redirect, setLoginMethods, setServerURL]);
 
   return { checked };
 }

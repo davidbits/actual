@@ -34,10 +34,7 @@ const addWatchers = (): Plugin => ({
   name: 'add-watchers',
   configureServer(server) {
     server.watcher
-      .add([
-        path.resolve('../loot-core/lib-dist/electron/*.js'),
-        path.resolve('../loot-core/lib-dist/browser/*.js'),
-      ])
+      .add([path.resolve('../loot-core/lib-dist/browser/*.js')])
       .on('all', function () {
         for (const wsc of server.ws.clients) {
           wsc.send(JSON.stringify({ type: 'static-changed' }));
@@ -92,11 +89,6 @@ const publicDir = path.resolve(__dirname, 'public');
 const publicDataDir = path.resolve(publicDir, 'data');
 const publicKcabDir = path.resolve(publicDir, 'kcab');
 const buildStatsDir = path.resolve(__dirname, 'build-stats');
-const pluginsServiceDistDir = path.resolve(
-  __dirname,
-  '../plugins-service/dist',
-);
-const serviceWorkerDir = path.resolve(__dirname, 'service-worker');
 
 const repoRoot = path.resolve(__dirname, '../..');
 
@@ -136,11 +128,6 @@ const CONTENT_TYPES: Record<string, string> = {
   '.map': 'application/json',
   '.wasm': 'application/wasm',
 };
-
-async function stagePluginsService(): Promise<void> {
-  await rm(serviceWorkerDir, { recursive: true, force: true });
-  await cp(pluginsServiceDistDir, serviceWorkerDir, { recursive: true });
-}
 
 // Extensions of data files served to the backend worker. Keep in sync
 // with the workbox `globPatterns` below so every listed file is precached.
@@ -237,27 +224,6 @@ const lootCoreBackend = (): Plugin => ({
   },
 });
 
-const pluginsServiceAssets = (): Plugin => ({
-  name: 'plugins-service-assets',
-  configureServer(server) {
-    server.middlewares.use('/service-worker', (req, res, next) => {
-      const url = new URL(req.url ?? '/', 'http://localhost');
-      const filePath = path.join(pluginsServiceDistDir, url.pathname);
-      if (!filePath.startsWith(pluginsServiceDistDir + path.sep)) return next();
-      const stream = createReadStream(filePath);
-      stream
-        .on('open', () => {
-          res.setHeader(
-            'Content-Type',
-            CONTENT_TYPES[path.extname(filePath)] ?? 'application/octet-stream',
-          );
-          stream.pipe(res);
-        })
-        .on('error', () => next());
-    });
-  },
-});
-
 export default defineConfig(async ({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const isVitest = process.env.VITEST === 'true';
@@ -266,46 +232,22 @@ export default defineConfig(async ({ mode, command }) => {
     'Cross-Origin-Embedder-Policy': 'require-corp',
   };
 
-  // Forward Netlify env variables
-  if (process.env.REVIEW_ID) {
-    process.env.REACT_APP_REVIEW_ID = process.env.REVIEW_ID;
-    process.env.REACT_APP_BRANCH = process.env.BRANCH;
-  }
-
-  // Netlify sets COMMIT_REF; GitHub Actions sets GITHUB_SHA (e.g. the
-  // Docker/npm nightly builds). Forward whichever is present so edge/nightly
-  // builds can show which commit they were built from. Release builds run in
-  // GitHub Actions on a version tag and keep their plain version.
-  const isTagBuild = process.env.GITHUB_REF_TYPE === 'tag';
-  const commitRef = process.env.COMMIT_REF || process.env.GITHUB_SHA;
-  if (commitRef && !isTagBuild) {
-    process.env.REACT_APP_COMMIT_REF = commitRef;
-  }
-
-  // Electron packaging (--mode=desktop) bundles loot-core directly, so skip
-  // all browser-only staging there.
-  if (mode !== 'desktop') {
-    if (command === 'build') {
-      const stageKcab = build({
-        configFile: lootCoreConfig,
-        mode: 'production',
-        root: lootCoreRoot,
-      }).then(async () => {
-        const hash = await extractWorkerHash();
-        await rm(publicKcabDir, { recursive: true, force: true });
-        await cp(lootCoreOutDir, publicKcabDir, { recursive: true });
-        return hash;
-      });
-      const [, , hash] = await Promise.all([
-        stagePublicData(),
-        stagePluginsService(),
-        stageKcab,
-      ]);
-      process.env.REACT_APP_BACKEND_WORKER_HASH = hash;
-    } else {
-      await stagePublicData();
-      process.env.REACT_APP_BACKEND_WORKER_HASH = 'dev';
-    }
+  if (command === 'build') {
+    const stageKcab = build({
+      configFile: lootCoreConfig,
+      mode: 'production',
+      root: lootCoreRoot,
+    }).then(async () => {
+      const hash = await extractWorkerHash();
+      await rm(publicKcabDir, { recursive: true, force: true });
+      await cp(lootCoreOutDir, publicKcabDir, { recursive: true });
+      return hash;
+    });
+    const [, hash] = await Promise.all([stagePublicData(), stageKcab]);
+    process.env.REACT_APP_BACKEND_WORKER_HASH = hash;
+  } else {
+    await stagePublicData();
+    process.env.REACT_APP_BACKEND_WORKER_HASH = 'dev';
   }
 
   const browserOpen = env.BROWSER_OPEN ? `//${env.BROWSER_OPEN}` : true;
@@ -317,12 +259,7 @@ export default defineConfig(async ({ mode, command }) => {
       minify: 'oxc',
       target: 'es2022',
       sourcemap: true,
-      outDir:
-        mode === 'desktop'
-          ? 'build-electron'
-          : mode === 'mobile'
-            ? 'build-mobile'
-            : 'build',
+      outDir: 'build',
       assetsDir: 'static',
       manifest: true,
       assetsInlineLimit: 0,
@@ -366,68 +303,36 @@ export default defineConfig(async ({ mode, command }) => {
       },
     },
     resolve: {
-      // The native mobile (Capacitor) apps get their own preload.
-      ...(mode === 'mobile' && {
-        conditions: ['mobile', 'module', 'browser', 'default'],
-      }),
-      ...(mode !== 'browser' &&
-        mode !== 'mobile' && {
-          conditions: ['electron-renderer', 'module', 'browser', 'default'],
-        }),
       tsconfigPaths: true,
     },
     plugins: [
-      // electron (desktop) builds do not support PWA
-      mode === 'desktop'
-        ? undefined
-        : VitePWA({
-            registerType: 'prompt',
-            // TODO:  The plugin worker build is currently disabled due to issues with offline support. Fix this
-            // strategies: 'injectManifest',
-            // srcDir: 'service-worker',
-            // filename: 'plugin-sw.js',
-            // manifest: {
-            //   name: 'Actual',
-            //   short_name: 'Actual',
-            //   description: 'A local-first personal finance tool',
-            //   theme_color: '#5c3dbb',
-            //   background_color: '#5c3dbb',
-            //   display: 'standalone',
-            //   start_url: './',
-            // },
-            // injectManifest: {
-            //   maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
-            //   swSrc: `service-worker/plugin-sw.js`,
-            // },
-            devOptions: {
-              // Disabled: caches stale assets across reloads in dev. Plugin
-              // code that explicitly needs a SW can register one itself.
-              enabled: false,
-              type: 'module',
-            },
-            workbox: {
-              globPatterns: [
-                '**/*.{js,css,html,txt,wasm,sql,sqlite,ico,png,woff2,webmanifest}',
-              ],
-              ignoreURLParametersMatching: [/^v$/],
-              navigateFallback: '/index.html',
-              maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
-              navigateFallbackDenylist: [
-                /^\/account\/.*$/,
-                /^\/admin\/.*$/,
-                /^\/secret\/.*$/,
-                /^\/openid\/.*$/,
-                /^\/plugins\/.*$/,
-                /^\/kcab\/.*$/,
-                /^\/plugin-data\/.*$/,
-                /^\/enablebanking\/.*$/,
-              ],
-            },
-          }),
+      VitePWA({
+        registerType: 'prompt',
+        devOptions: {
+          // Avoid caching stale assets while developing.
+          enabled: false,
+          type: 'module',
+        },
+        workbox: {
+          globPatterns: [
+            '**/*.{js,css,html,txt,wasm,sql,sqlite,ico,png,woff2,webmanifest}',
+          ],
+          ignoreURLParametersMatching: [/^v$/],
+          navigateFallback: '/index.html',
+          maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
+          navigateFallbackDenylist: [
+            /^\/account\/.*$/,
+            /^\/admin\/.*$/,
+            /^\/secret\/.*$/,
+            /^\/openid\/.*$/,
+            /^\/kcab\/.*$/,
+            /^\/enablebanking\/.*$/,
+          ],
+        },
+      }),
       injectShims(),
       addWatchers(),
-      mode === 'desktop' || isVitest ? undefined : lootCoreBackend(),
-      mode === 'desktop' ? undefined : pluginsServiceAssets(),
+      isVitest ? undefined : lootCoreBackend(),
       react(),
       babel({
         include: [reactCompilerInclude],

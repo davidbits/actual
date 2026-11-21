@@ -20,7 +20,6 @@ import { theme } from '@actual-app/components/theme';
 import { Tooltip } from '@actual-app/components/tooltip';
 import { View } from '@actual-app/components/view';
 import { isDevelopmentEnvironment } from '@actual-app/core/shared/environment';
-import * as Platform from '@actual-app/core/shared/platform';
 import { css } from '@emotion/css';
 
 import { sync } from '#app/appSlice';
@@ -40,7 +39,6 @@ import { MonthCountSelector } from './budget/MonthCountSelector';
 import { Link } from './common/Link';
 import { HelpMenu } from './HelpMenu';
 import { LoggedInUser } from './LoggedInUser';
-import { NotificationsButton } from './news/NotificationsButton';
 import { useServerURL } from './ServerContext';
 import { useSidebar } from './sidebar/SidebarProvider';
 import { ThemeSelector } from './ThemeSelector';
@@ -288,9 +286,7 @@ export function Titlebar({ style }: TitlebarProps) {
         '& *': {
           pointerEvents: 'auto',
         },
-        ...(!Platform.isBrowser && Platform.OS === 'mac' && floatingSidebar
-          ? { paddingLeft: 80 }
-          : {}),
+        ...{},
         ...style,
       }}
     >
@@ -343,7 +339,6 @@ export function Titlebar({ style }: TitlebarProps) {
         <UncategorizedButton />
         {isDevelopmentEnvironment() && !isTestEnv && <ThemeSelector />}
         <PrivacyButton />
-        <NotificationsButton />
         {serverURL ? <ServerSyncButton /> : null}
         <SharedArrayBufferWarning />
         <LoggedInUser />

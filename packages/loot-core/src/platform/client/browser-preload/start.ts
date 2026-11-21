@@ -2,7 +2,6 @@ import { initBackend as initSQLBackend } from 'absurd-sql/dist/indexeddb-main-th
 
 import { logger } from '#platform/server/log';
 import type { StorageBackend } from '#platform/server/sqlite';
-import * as Platform from '#shared/platform';
 
 import { requestStorageRelease, WorkerBridge } from './worker-bridge';
 
@@ -50,13 +49,6 @@ export function startBrowserBackend(
     createSharedWorker,
     forceDirectWorker,
   } = opts;
-
-  // Capacitor serves the app from a custom URL scheme, which WebKit never
-  // treats as cross-origin isolated, so SharedArrayBuffer is unavailable in
-  // the native mobile app. Always run it in the fallback mode there.
-  if (Platform.isNativeMobileApp) {
-    localStorage.setItem('SharedArrayBufferOverride', 'true');
-  }
 
   // Use SharedWorker as a coordinator for multi-tab, multi-budget support.
   // Each budget gets its own leader tab running a dedicated Worker. All other

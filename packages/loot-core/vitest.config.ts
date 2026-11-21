@@ -33,10 +33,10 @@ export default defineConfig({
       : ['default'],
   },
   ssr: {
-    resolve: { conditions: ['electron', 'module', 'node', 'development'] },
+    resolve: { conditions: ['api', 'module', 'node', 'development'] },
   },
   resolve: {
-    conditions: ['electron', 'module', 'browser', 'development'],
+    conditions: ['api', 'module', 'browser', 'development'],
   },
   plugins: [peggyLoader()],
 });

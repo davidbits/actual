@@ -14,9 +14,7 @@ import { computeClientVersion } from './util/versions';
 const backendWorkerUrl = new URL('./browser-server.js', import.meta.url);
 
 // This file installs global variables that the app expects.
-// Normally these are already provided by electron, but in a real
-// browser environment this is where we initialize the backend and
-// everything else.
+// Initialize the browser backend and browser integration.
 
 const IS_DEV = import.meta.env.DEV;
 const ACTUAL_VERSION = computeClientVersion({
@@ -96,18 +94,13 @@ const isUpdateReadyForDownloadPromise = new Promise(resolve => {
     resolve(true);
   };
 });
-// Skip SW registration in dev so stale cached assets don't override edits
-// between page loads, and in the native mobile apps, whose assets ship in the
-// app bundle and update via the app stores. Plugin code that needs a SW can
-// register one itself. Without a SW, applyAppUpdate() falls back to a plain
-// reload so callers don't hang on its never-resolving promise.
-const updateSW =
-  IS_DEV || Platform.isNativeMobileApp
-    ? () => window.location.reload()
-    : registerSW({
-        immediate: true,
-        onNeedRefresh: markUpdateReadyForDownload,
-      });
+// Skip service worker registration during development to avoid stale assets.
+const updateSW = IS_DEV
+  ? () => window.location.reload()
+  : registerSW({
+      immediate: true,
+      onNeedRefresh: markUpdateReadyForDownload,
+    });
 
 global.Actual = {
   IS_DEV,
@@ -135,24 +128,6 @@ global.Actual = {
       .then(() => {
         window.location.reload();
       });
-  },
-
-  startSyncServer: () => {
-    // Only for electron app
-  },
-
-  stopSyncServer: () => {
-    // Only for electron app
-  },
-
-  isSyncServerRunning: () => false,
-
-  startOAuthServer: () => {
-    return '';
-  },
-
-  restartElectronServer: () => {
-    // Only for electron app
   },
 
   openFileDialog: async ({ filters = [] }) => {
@@ -246,12 +221,6 @@ global.Actual = {
   openURLInBrowser: url => {
     window.open(url, '_blank');
   },
-  openInFileManager: () => {
-    // File manager not available in browser
-  },
-  onEventFromMain: () => {
-    // Only for electron app
-  },
   isUpdateReadyForDownload: () => isUpdateReadyForDownload,
   waitForUpdateReadyForDownload: () => isUpdateReadyForDownloadPromise,
   applyAppUpdate: async () => {
@@ -265,24 +234,11 @@ global.Actual = {
     });
   },
 
-  ipcConnect: () => {
-    // Only for electron app
-  },
   getServerSocket: async () => {
     return worker;
   },
 
   setTheme: theme => {
     window.__actionsForMenu.saveGlobalPrefs({ prefs: { theme } });
-  },
-
-  moveBudgetDirectory: () => {
-    // Only for electron app
-  },
-
-  setDocumentDir: async () => {
-    throw new Error(
-      'Changing the data folder is only available in the desktop app',
-    );
   },
 };

@@ -18,8 +18,28 @@ import { resetTracer, tracer } from '#shared/test-helpers';
 
 vi.mock('#platform/client/connection');
 vi.mock('#platform/exceptions');
-vi.mock('#platform/server/asyncStorage');
-vi.mock('#platform/server/connection');
+vi.mock('#platform/server/asyncStorage', async () => {
+  const implementation =
+    await import('../platform/server/asyncStorage/__mocks__/index');
+  return Object.fromEntries(
+    Object.entries(implementation).map(([name, method]) => [
+      name,
+      vi.fn(method),
+    ]),
+  );
+});
+vi.mock(
+  '#platform/server/connection',
+  () => import('../platform/server/connection/__mocks__/index'),
+);
+// Node/API bundles place these assets beside the bundle; source tests use
+// the same real filesystem against the source package's assets.
+vi.mock('#platform/server/fs', async importOriginal => ({
+  ...(await importOriginal()),
+  bundledDatabasePath: __dirname + '/../../default-db.sqlite',
+  migrationsPath: __dirname + '/../../migrations',
+  demoBudgetPath: __dirname + '/../../demo-budget',
+}));
 vi.mock('#server/post');
 
 // By default, syncing is disabled

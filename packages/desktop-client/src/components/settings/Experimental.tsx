@@ -3,18 +3,10 @@ import { Trans, useTranslation } from 'react-i18next';
 
 import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
-import { spacing } from '@actual-app/components/tokens';
-import { View } from '@actual-app/components/view';
-import { isElectron } from '@actual-app/core/shared/environment';
-import type { FeatureFlag, ServerPrefs } from '@actual-app/core/types/prefs';
+import type { FeatureFlag } from '@actual-app/core/types/prefs';
 
-import { useAuth } from '#auth/AuthProvider';
-import { Permissions } from '#auth/types';
-import { Link } from '#components/common/Link';
 import { Checkbox } from '#components/forms';
-import { useLoginMethod, useMultiuserEnabled } from '#components/ServerContext';
 import { useFeatureFlag } from '#hooks/useFeatureFlag';
-import { useServerPref } from '#hooks/useServerPref';
 import { useSyncedPref } from '#hooks/useSyncedPref';
 import { useSyncServerStatus } from '#hooks/useSyncServerStatus';
 
@@ -27,7 +19,6 @@ type FeatureToggleProps = {
   disableToggle?: boolean;
   error?: ReactNode;
   children: ReactNode;
-  feedbackLink?: string;
   note?: ReactNode;
   isSubFeature?: boolean;
   subFeatures?: ReactNode;
@@ -37,7 +28,6 @@ type FeatureToggleProps = {
 function FeatureToggle({
   flag: flagName,
   disableToggle = false,
-  feedbackLink,
   error,
   children,
   note,
@@ -60,20 +50,18 @@ function FeatureToggle({
         )
       }
       control={
-        <FeatureControl feedbackLink={feedbackLink}>
-          <Checkbox
-            id={id}
-            checked={enabled}
-            onChange={() => {
-              setFlagPref(String(!enabled));
-              if (enabled) {
-                onDisable?.();
-              }
-            }}
-            disabled={disableToggle}
-            style={{ marginRight: 0 }}
-          />
-        </FeatureControl>
+        <Checkbox
+          id={id}
+          checked={enabled}
+          onChange={() => {
+            setFlagPref(String(!enabled));
+            if (enabled) {
+              onDisable?.();
+            }
+          }}
+          disabled={disableToggle}
+          style={{ marginRight: 0 }}
+        />
       }
     >
       {subFeatures}
@@ -99,87 +87,6 @@ function FeatureDetails({ note, error }: FeatureDetailsProps) {
   );
 }
 
-type FeatureControlProps = {
-  feedbackLink?: string;
-  children: ReactNode;
-};
-
-function FeatureControl({ feedbackLink, children }: FeatureControlProps) {
-  return (
-    <View
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}
-    >
-      {feedbackLink && (
-        <Link variant="external" to={feedbackLink} linkColor="purple">
-          <Trans>Give feedback</Trans>
-        </Link>
-      )}
-      {children}
-    </View>
-  );
-}
-
-type ServerFeatureToggleProps = {
-  prefName: keyof ServerPrefs;
-  disableToggle?: boolean;
-  error?: ReactNode;
-  children: ReactNode;
-  feedbackLink?: string;
-};
-
-function ServerFeatureToggle({
-  prefName,
-  disableToggle = false,
-  feedbackLink,
-  error,
-  children,
-}: ServerFeatureToggleProps) {
-  const [enabled, setEnabled] = useServerPref(prefName);
-
-  const syncServerStatus = useSyncServerStatus();
-  const isUsingServer = syncServerStatus !== 'no-server';
-  const isServerOffline = syncServerStatus === 'offline';
-  const { hasPermission } = useAuth();
-  const loginMethod = useLoginMethod();
-  const multiuserEnabled = useMultiuserEnabled();
-
-  if (!isUsingServer || isServerOffline) {
-    return null;
-  }
-
-  // Show to admins if OIDC is enabled, or to everyone if multi-user is not enabled
-  const isAdmin = hasPermission(Permissions.ADMINISTRATOR);
-  const oidcEnabled = loginMethod === 'openid';
-  const shouldShow = (oidcEnabled && isAdmin) || !multiuserEnabled;
-
-  if (!shouldShow) {
-    return null;
-  }
-
-  const id = `settings-flag-${prefName}`;
-
-  return (
-    <SettingsRow
-      htmlFor={id}
-      title={children}
-      description={disableToggle && error && <FeatureDetails error={error} />}
-      control={
-        <FeatureControl feedbackLink={feedbackLink}>
-          <Checkbox
-            id={id}
-            checked={enabled === 'true'}
-            onChange={() => {
-              setEnabled(enabled === 'true' ? 'false' : 'true');
-            }}
-            disabled={disableToggle}
-            style={{ marginRight: 0 }}
-          />
-        </FeatureControl>
-      }
-    />
-  );
-}
-
 export function ExperimentalFeatures() {
   const { t } = useTranslation();
   const goalTemplatesEnabled = useFeatureFlag('goalTemplatesEnabled');
@@ -187,11 +94,6 @@ export function ExperimentalFeatures() {
     'flags.goalTemplatesUIEnabled',
   );
   const isUsingServer = useSyncServerStatus() !== 'no-server';
-
-  const showServerPrefs =
-    localStorage.getItem('devEnableServerPrefs') === 'true';
-  // Only the web app has a choice of storage engine
-  const showStoragePrefs = !isElectron();
 
   return (
     <SettingsGroup
@@ -207,7 +109,7 @@ export function ExperimentalFeatures() {
           goalTemplatesEnabled && (
             <FeatureToggle
               flag="goalTemplatesUIEnabled"
-              feedbackLink="https://github.com/actualbudget/actual/issues/7692"
+
               isSubFeature
             >
               <Trans>Budget automations UI</Trans>
@@ -219,7 +121,7 @@ export function ExperimentalFeatures() {
       </FeatureToggle>
       <FeatureToggle
         flag="actionTemplating"
-        feedbackLink="https://github.com/actualbudget/actual/issues/3606"
+
         note={
           <Trans>
             Deprecated: this feature will be removed in a future release. Use
@@ -229,72 +131,36 @@ export function ExperimentalFeatures() {
       >
         <Trans>Rule action templating</Trans>
       </FeatureToggle>
-      <FeatureToggle
-        flag="formulaMode"
-        feedbackLink="https://github.com/actualbudget/actual/issues/5949"
-      >
+      <FeatureToggle flag="formulaMode">
         <Trans>Excel formula mode (Formula cards & Rule formulas)</Trans>
       </FeatureToggle>
-      <FeatureToggle
-        flag="currency"
-        feedbackLink="https://github.com/actualbudget/actual/issues/5191"
-      >
+      <FeatureToggle flag="currency">
         <Trans>Currency support</Trans>
       </FeatureToggle>
-      <FeatureToggle
-        flag="mobileCalculator"
-        feedbackLink="https://github.com/actualbudget/actual/issues/8255"
-      >
+      <FeatureToggle flag="mobileCalculator">
         <Trans>Mobile calculator</Trans>
       </FeatureToggle>
-      <FeatureToggle
-        flag="newSidebarUI"
-        feedbackLink="https://github.com/actualbudget/actual/issues/9007"
-      >
+      <FeatureToggle flag="newSidebarUI">
         <Trans>Redesigned sidebar</Trans>
       </FeatureToggle>
-      <FeatureToggle
-        flag="sankeyReport"
-        feedbackLink="https://github.com/actualbudget/actual/issues/1919"
-      >
+      <FeatureToggle flag="sankeyReport">
         <Trans>Sankey report</Trans>
       </FeatureToggle>
-      <FeatureToggle
-        flag="balanceForecastReport"
-        feedbackLink="https://github.com/actualbudget/actual/issues/7669"
-      >
+      <FeatureToggle flag="balanceForecastReport">
         <Trans>Balance Forecast Report</Trans>
       </FeatureToggle>
-      <FeatureToggle
-        flag="budgetAnalysisReport"
-        feedbackLink="https://github.com/actualbudget/actual/issues/6742"
-      >
+      <FeatureToggle flag="budgetAnalysisReport">
         <Trans>Budget Analysis Report</Trans>
       </FeatureToggle>
-      <FeatureToggle
-        flag="monteCarloReport"
-        feedbackLink="https://github.com/actualbudget/actual/issues/8571"
-      >
+      <FeatureToggle flag="monteCarloReport">
         <Trans>Monte Carlo Analysis Report</Trans>
       </FeatureToggle>
       {isUsingServer && (
-        <FeatureToggle
-          flag="enableBanking"
-          feedbackLink="https://github.com/actualbudget/actual/issues/7799"
-        >
+        <FeatureToggle flag="enableBanking">
           <Trans>Enable Banking sync (EU banks)</Trans>
         </FeatureToggle>
       )}
-      {showServerPrefs && (
-        <ServerFeatureToggle
-          prefName="flags.plugins"
-          disableToggle
-          feedbackLink="https://github.com/actualbudget/actual/issues/5950"
-        >
-          <Trans>Client-Side plugins (soon)</Trans>
-        </ServerFeatureToggle>
-      )}
-      {showStoragePrefs && <StorageBackendToggle />}
+      <StorageBackendToggle />
     </SettingsGroup>
   );
 }

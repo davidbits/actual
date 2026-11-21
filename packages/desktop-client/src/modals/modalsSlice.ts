@@ -9,14 +9,11 @@ import type {
   CategoryGroupEntity,
   GoCardlessToken,
   NewRuleEntity,
-  NewUserEntity,
   NoteEntity,
   RuleEntity,
   ScheduleEntity,
   SyncServerEnableBankingAccount,
   TransactionEntity,
-  UserAccessEntity,
-  UserEntity,
 } from '@actual-app/core/types/models';
 import type { CleanupTemplate } from '@actual-app/core/types/models/cleanup-templates';
 import type { Template } from '@actual-app/core/types/models/templates';
@@ -241,16 +238,6 @@ export type Modal =
     }
   | {
       name: 'out-of-sync-migrations';
-    }
-  | {
-      name: 'files-settings';
-    }
-  | {
-      name: 'confirm-change-document-dir';
-      options: {
-        currentBudgetDirectory: string;
-        newDirectory: string;
-      };
     }
   | {
       name: 'create-encryption-key';
@@ -630,26 +617,6 @@ export type Modal =
       name: 'copy-widget-to-dashboard';
       options: {
         onSelect: (dashboardId: string) => void;
-      };
-    }
-  | {
-      name: 'edit-user';
-      options: {
-        user: UserEntity | NewUserEntity;
-        onSave: (user: UserEntity) => void;
-      };
-    }
-  | {
-      name: 'edit-access';
-      options: {
-        access: UserAccessEntity;
-        onSave: (userAccess: UserAccessEntity) => void;
-      };
-    }
-  | {
-      name: 'transfer-ownership';
-      options: {
-        onSave: () => void;
       };
     }
   | {

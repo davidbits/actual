@@ -103,8 +103,6 @@ export type LocalPrefs = Partial<{
   'budget.summaryCollapsed': boolean;
   'budget.showHiddenCategories': boolean;
   'budget.startMonth': string;
-  'flags.updateNotificationShownForVersion': string;
-  'tour.introSeen': boolean;
   'schedules.showCompleted': boolean;
   reportsViewLegend: boolean;
   reportsViewSummary: boolean;
@@ -132,30 +130,10 @@ export type GlobalPrefs = Partial<{
   language: string;
   theme: Theme;
   preferredDarkTheme: DarkTheme;
-  plugins: boolean;
-  pluginThemes: Record<
-    string,
-    {
-      id: string;
-      displayName: string;
-      description?: string;
-      baseTheme?: 'light' | 'dark' | 'midnight';
-      colors: Record<string, string>;
-    }
-  >; // Complete plugin theme metadata
   installedCustomLightTheme?: string; // JSON of InstalledTheme for light custom theme (also used as single custom theme in non-auto mode)
   installedCustomDarkTheme?: string; // JSON of InstalledTheme for auto-mode dark custom theme
   customCssOverride?: string; // User-pasted CSS override applied on top of any theme. Empty string or undefined means no override.
-  documentDir: string; // Electron only
-  serverSelfSignedCert: string; // Electron only
-  syncServerConfig?: {
-    // Electron only
-    autoStart?: boolean;
-    port?: number;
-  };
-  notifyWhenUpdateIsAvailable: boolean;
-  lastSeenNewsDate: string; // YYYY-MM-DD of the newest news entry the user has seen on this device
-  showNewsFeed: boolean; // Whether in-app notifications (bell, Notifications page, release toast) are shown.
+  documentDir: string; // Local storage directory
 }>;
 
 // GlobalPrefsJson represents what's saved in the global-store.json file
@@ -179,17 +157,8 @@ export type GlobalPrefsJson = Partial<{
   'installed-custom-theme'?: GlobalPrefs['installedCustomLightTheme'];
   'installed-custom-dark-theme'?: GlobalPrefs['installedCustomDarkTheme'];
   'custom-css-override'?: GlobalPrefs['customCssOverride'];
-  plugins?: string; // "true" or "false"
-  'plugin-theme'?: string; // JSON string of complete plugin theme (current selected plugin theme)
-  'server-self-signed-cert'?: GlobalPrefs['serverSelfSignedCert'];
-  syncServerConfig?: GlobalPrefs['syncServerConfig'];
-  notifyWhenUpdateIsAvailable?: GlobalPrefs['notifyWhenUpdateIsAvailable'];
-  lastSeenNewsDate?: GlobalPrefs['lastSeenNewsDate'];
-  showNewsFeed?: GlobalPrefs['showNewsFeed'];
 }>;
 
 export type AuthMethods = 'password' | 'openid';
 
-export type ServerPrefs = Partial<{
-  'flags.plugins': 'true' | 'false';
-}>;
+export type ServerPrefs = Record<string, string>;

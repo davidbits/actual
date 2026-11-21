@@ -9,14 +9,11 @@ import { Input } from '@actual-app/components/input';
 import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
-import { isElectron } from '@actual-app/core/shared/environment';
-import * as Platform from '@actual-app/core/shared/platform';
 
 import { closeBudget } from '#budgetfiles/budgetfilesSlice';
 import { useContextMenu } from '#hooks/useContextMenu';
 import { useMetadataPref } from '#hooks/useMetadataPref';
 import { useNavigate } from '#hooks/useNavigate';
-import { pushModal } from '#modals/modalsSlice';
 import { useDispatch } from '#redux';
 
 type BudgetNameProps = {
@@ -24,7 +21,7 @@ type BudgetNameProps = {
 };
 
 export function BudgetName({ children }: BudgetNameProps) {
-  const hasWindowButtons = !Platform.isBrowser && Platform.OS === 'mac';
+  const hasWindowButtons = false;
 
   return (
     <View
@@ -73,12 +70,7 @@ function EditableBudgetName() {
         text: t('Settings'),
         onClick: () => void navigate('/settings'),
       },
-      isElectron() && {
-        name: 'loadBackup',
-        text: t('Load Backup…'),
-        onClick: () =>
-          dispatch(pushModal({ modal: { name: 'load-backup', options: {} } })),
-      },
+      false,
       {
         name: 'close',
         text: t('Switch file'),

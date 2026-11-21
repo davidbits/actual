@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 
-import { useLoginMethod, useMultiuserEnabled } from '#components/ServerContext';
+import { useLoginMethod } from '#components/ServerContext';
 import { useSyncServerStatus } from '#hooks/useSyncServerStatus';
 import { TestProviders } from '#mocks';
 
@@ -11,7 +11,6 @@ vi.mock('#hooks/useSyncServerStatus', () => ({
   useSyncServerStatus: vi.fn(),
 }));
 vi.mock('#components/ServerContext', () => ({
-  useMultiuserEnabled: vi.fn(),
   useLoginMethod: vi.fn(),
 }));
 
@@ -22,7 +21,6 @@ describe('AuthSettings', () => {
 
   it('does not render when server status is no-server', () => {
     vi.mocked(useSyncServerStatus).mockReturnValue('no-server');
-    vi.mocked(useMultiuserEnabled).mockReturnValue(false);
     vi.mocked(useLoginMethod).mockReturnValue('password');
 
     const { container } = render(<AuthSettings />, { wrapper: TestProviders });
@@ -36,7 +34,6 @@ describe('AuthSettings', () => {
     });
 
     it('disables buttons and shows warning when login method is password', () => {
-      vi.mocked(useMultiuserEnabled).mockReturnValue(false);
       vi.mocked(useLoginMethod).mockReturnValue('password');
 
       render(<AuthSettings />, { wrapper: TestProviders });
@@ -53,7 +50,6 @@ describe('AuthSettings', () => {
     });
 
     it('disables buttons and shows warning when login method is openid', () => {
-      vi.mocked(useMultiuserEnabled).mockReturnValue(false);
       vi.mocked(useLoginMethod).mockReturnValue('openid');
 
       render(<AuthSettings />, { wrapper: TestProviders });
@@ -76,7 +72,6 @@ describe('AuthSettings', () => {
     });
 
     it('renders normally with password login method', () => {
-      vi.mocked(useMultiuserEnabled).mockReturnValue(false);
       vi.mocked(useLoginMethod).mockReturnValue('password');
 
       render(<AuthSettings />, { wrapper: TestProviders });
@@ -93,7 +88,6 @@ describe('AuthSettings', () => {
     });
 
     it('renders normally with openid login method', () => {
-      vi.mocked(useMultiuserEnabled).mockReturnValue(false);
       vi.mocked(useLoginMethod).mockReturnValue('openid');
 
       render(<AuthSettings />, { wrapper: TestProviders });
@@ -107,18 +101,6 @@ describe('AuthSettings', () => {
         /server is offline\. openid settings are unavailable\./i,
       );
       expect(warningText).not.toBeInTheDocument();
-    });
-
-    it('shows multi-user warning when multiuser is enabled', () => {
-      vi.mocked(useMultiuserEnabled).mockReturnValue(true);
-      vi.mocked(useLoginMethod).mockReturnValue('openid');
-
-      render(<AuthSettings />, { wrapper: TestProviders });
-
-      const warningText = screen.getByText(
-        /disabling openid will deactivate multi-user mode\./i,
-      );
-      expect(warningText).toBeInTheDocument();
     });
   });
 });

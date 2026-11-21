@@ -1,5 +1,4 @@
 // @ts-strict-ignore
-import * as Platform from '@actual-app/core/shared/platform';
 
 function parseSemanticVersion(versionString): [number, number, number] {
   return versionString
@@ -48,34 +47,4 @@ export function computeClientVersion({
     return `${packageVersion}+${commitRef.slice(0, 7)}`;
   }
   return packageVersion;
-}
-
-export async function getLatestVersion(): Promise<string | 'unknown'> {
-  if (Platform.isPlaywright || import.meta.env.REACT_APP_REVIEW_ID) {
-    return Promise.resolve('v99.9.9');
-  }
-  // The native mobile apps update through the app stores, so a newer GitHub
-  // release is nothing the user can act on. Skip the request entirely.
-  if (Platform.isNativeMobileApp) {
-    return Promise.resolve('unknown');
-  }
-
-  try {
-    const response = await fetch(
-      'https://api.github.com/repos/actualbudget/actual/releases/latest',
-    );
-    const json = await response.json();
-    return json?.tag_name ?? 'unknown';
-  } catch {
-    // Rate limit exceeded? Or perhaps GitHub is down?
-    return 'unknown';
-  }
-}
-
-export function getIsOutdated(latestVersion: string): boolean {
-  const clientVersion = window.Actual.ACTUAL_VERSION;
-  if (latestVersion === 'unknown') {
-    return false;
-  }
-  return cmpSemanticVersion(clientVersion, latestVersion) < 0;
 }

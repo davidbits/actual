@@ -1398,8 +1398,7 @@ function handleSyncError(
 
   return {
     accountId: acct.id,
-    message:
-      'There was an internal error. Please get in touch https://actualbudget.org/contact for support.',
+    message: 'There was an internal error.',
     internal: err.stack,
   };
 }

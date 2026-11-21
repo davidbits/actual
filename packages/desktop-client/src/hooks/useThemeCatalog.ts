@@ -1,52 +1,15 @@
-import { useEffect, useState } from 'react';
-
+import catalog from '#data/customThemeCatalog';
 import type { CatalogTheme } from '#style/customThemes';
 
-const CATALOG_URL = `https://raw.githubusercontent.com/actualbudget/actual/${import.meta.env.REACT_APP_BRANCH || 'master'}/packages/desktop-client/src/data/customThemeCatalog.json`;
+const data: CatalogTheme[] = catalog.map(theme => {
+  const { mode } = theme;
+  if (mode !== 'light' && mode !== 'dark') {
+    throw new Error('Invalid theme catalog mode');
+  }
+  return { ...theme, mode };
+});
 
-/**
- * Custom hook to fetch and manage the theme catalog from GitHub.
- */
+// Theme discovery uses the catalog shipped with this fork, including offline.
 export function useThemeCatalog() {
-  const [data, setData] = useState<CatalogTheme[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchCatalog = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(CATALOG_URL);
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch catalog: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        // Validate that data is an array
-        if (!Array.isArray(data)) {
-          throw new Error('Invalid catalog format: expected an array');
-        }
-
-        setData(data);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to load theme catalog',
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchCatalog();
-  }, []);
-
-  return {
-    data,
-    isLoading,
-    error,
-  };
+  return { data, isLoading: false, error: null };
 }

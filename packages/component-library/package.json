@@ -52,10 +52,7 @@
     "./date-range-picker": "./src/DateRangePicker.tsx"
   },
   "scripts": {
-    "generate:icons": "rm src/icons/*/*.tsx; cd src/icons && svgr --template template.ts --index-template index-template.ts --typescript --expand-props start -d . .",
     "test": "ENV=web vitest --run -c vitest.web.config.ts",
-    "start:storybook": "storybook dev -p 6006",
-    "build:storybook": "storybook build",
     "typecheck": "tsgo -b"
   },
   "dependencies": {
@@ -65,14 +62,7 @@
     "usehooks-ts": "^3.1.1"
   },
   "devDependencies": {
-    "@chromatic-com/storybook": "^5.5.1",
     "@rolldown/plugin-babel": "~0.2.4",
-    "@storybook/addon-a11y": "^10.6.2",
-    "@storybook/addon-docs": "^10.6.2",
-    "@storybook/react-vite": "^10.6.2",
-    "@svgr/babel-plugin-add-jsx-attribute": "^8.0.0",
-    "@svgr/cli": "^8.1.0",
-    "@svgr/core": "^8.1.0",
     "@testing-library/react": "16.3.3",
     "@types/culori": "^4.0.1",
     "@types/react": "^19.3.0",
@@ -80,10 +70,8 @@
     "@vitejs/plugin-react": "^6.1.2",
     "babel-plugin-react-compiler": "^1.0.0",
     "culori": "^4.0.2",
-    "eslint-plugin-storybook": "^10.6.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "storybook": "^10.6.2",
     "vite": "^8.3.4",
     "vitest": "^5.0.4"
   },

@@ -13,3 +13,7 @@ export const send: T.Send = function (type, args) {
 export const resetEvents: T.ResetEvents = function () {
   events = [];
 };
+
+export function getNumClients(): number {
+  return 1;
+}

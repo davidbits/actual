@@ -17,8 +17,6 @@ export { ManageTagsPage as TagEdit } from '#components/tags/ManageTagsPage';
 
 export { BankSync } from '#components/banksync';
 
-export { UserDirectoryPage } from '#components/admin/UserDirectory/UserDirectoryPage';
-
 // Account component is currently used for uncategorized transactions view.
 // Need to separate this to it's own component in the future.
 export { Account as Category } from '#components/accounts/Account';

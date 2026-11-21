@@ -119,7 +119,7 @@ export function MobilePageHeader({
 // pages so its background doesn't flash while the next page renders. Pages
 // render their header into a single persistent `<MobilePageHeaderSlot />`
 // (rendered by the app shell) through a portal. Without a provider (e.g. in
-// tests or storybook) the header is rendered inline instead.
+// isolated component tests) the header is rendered inline instead.
 const MobilePageHeaderSlotContext = createContext<HTMLElement | null>(null);
 const MobilePageHeaderSlotRefContext = createContext<
   ((element: HTMLElement | null) => void) | null

@@ -37,10 +37,8 @@ import { CoverModal } from './modals/CoverModal';
 import { CreateAccountModal } from './modals/CreateAccountModal';
 import { CreateEncryptionKeyModal } from './modals/CreateEncryptionKeyModal';
 import { CreateLocalAccountModal } from './modals/CreateLocalAccountModal';
-import { EditUserAccess } from './modals/EditAccess';
 import { EditFieldModal } from './modals/EditFieldModal';
 import { EditRuleModal } from './modals/EditRuleModal';
-import { EditUserFinanceApp } from './modals/EditUser';
 import { EnableBankingExternalMsgModal } from './modals/EnableBankingExternalMsgModal';
 import { EnableBankingInitialiseModal } from './modals/EnableBankingInitialiseModal';
 import { EnvelopeBalanceMenuModal } from './modals/EnvelopeBalanceMenuModal';
@@ -56,10 +54,8 @@ import { HoldBufferModal } from './modals/HoldBufferModal';
 import { ImportTransactionsModal } from './modals/ImportTransactionsModal';
 import { KeyboardShortcutModal } from './modals/KeyboardShortcutModal';
 import { LoadBackupModal } from './modals/LoadBackupModal';
-import { ConfirmChangeDocumentDirModal } from './modals/manager/ConfirmChangeDocumentDir';
 import { DeleteFileModal } from './modals/manager/DeleteFileModal';
 import { DuplicateFileModal } from './modals/manager/DuplicateFileModal';
-import { FilesSettingsModal } from './modals/manager/FilesSettingsModal';
 import { ImportActualModal } from './modals/manager/ImportActualModal';
 import { ImportModal } from './modals/manager/ImportModal';
 import { ImportYNAB4Modal } from './modals/manager/ImportYNAB4Modal';
@@ -84,7 +80,6 @@ import { TrackingBudgetMonthMenuModal } from './modals/TrackingBudgetMonthMenuMo
 import { TrackingBudgetSummaryModal } from './modals/TrackingBudgetSummaryModal';
 import { TransactionTableColumnsModal } from './modals/TransactionTableColumnsModal';
 import { TransferModal } from './modals/TransferModal';
-import { TransferOwnership } from './modals/TransferOwnership';
 import { UnmigrateBudgetAutomationsModal } from './modals/UnmigrateBudgetAutomationsModal';
 import { CategoryLearning } from './payees/CategoryLearning';
 import { DiscoverSchedules } from './schedules/DiscoverSchedules';
@@ -404,10 +399,6 @@ export function Modals() {
           return <DuplicateFileModal key={key} {...modal.options} />;
         case 'import':
           return <ImportModal key={key} />;
-        case 'files-settings':
-          return <FilesSettingsModal key={key} />;
-        case 'confirm-change-document-dir':
-          return <ConfirmChangeDocumentDirModal key={key} {...modal.options} />;
         case 'import-ynab4':
           return <ImportYNAB4Modal key={key} />;
         case 'import-ynab5':
@@ -417,15 +408,6 @@ export function Modals() {
 
         case 'out-of-sync-migrations':
           return <OutOfSyncMigrationsModal key={key} />;
-
-        case 'edit-access':
-          return <EditUserAccess key={key} {...modal.options} />;
-
-        case 'edit-user':
-          return <EditUserFinanceApp key={key} {...modal.options} />;
-
-        case 'transfer-ownership':
-          return <TransferOwnership key={key} {...modal.options} />;
 
         case 'api-key':
           return <ApiKeyModal key={key} {...modal.options} />;

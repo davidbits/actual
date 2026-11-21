@@ -2,12 +2,10 @@
   "references": [
     { "path": "./packages/crdt" },
     { "path": "./packages/component-library" },
-    { "path": "./packages/plugins-service" },
     { "path": "./packages/loot-core" },
     { "path": "./packages/api" },
     { "path": "./packages/desktop-client" },
     { "path": "./packages/sync-server" },
-    { "path": "./packages/desktop-electron" },
     { "path": "./packages/cli" }
   ],
   "compilerOptions": {
@@ -48,9 +46,6 @@
     "packages/*/@types",
     "**/test-results/*",
     "**/playwright-report/*",
-    "**/service-worker/*",
-    "packages/docs/**/*",
-    "packages/mobile-client/android/*",
-    "packages/mobile-client/ios/*"
+    "**/service-worker/*"
   ]
 }

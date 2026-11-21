@@ -187,8 +187,6 @@ export function listenForSyncEvent(store: AppStore, queryClient: QueryClient) {
     } else if (event.type === 'error') {
       let notif: Notification | null = null;
       const learnMore = `[${t('Learn more')}](https://actualbudget.org/docs/getting-started/sync/#debugging-sync-issues)`;
-      const githubIssueLink =
-        'https://github.com/actualbudget/actual/issues/new?assignees=&labels=bug&template=bug-report.yml&title=%5BBug%5D%3A+';
 
       switch (event.subtype) {
         case 'out-of-sync':
@@ -441,8 +439,7 @@ export function listenForSyncEvent(store: AppStore, queryClient: QueryClient) {
           console.trace('apply-failure', event.meta);
           notif = {
             message: t(
-              "We couldn't apply that change to the database. Please report this as a bug by [opening a GitHub issue]({{githubIssueLink}}).",
-              { githubIssueLink },
+              "We couldn't apply that change to the database. Check the local logs before retrying.",
             ),
           };
           break;

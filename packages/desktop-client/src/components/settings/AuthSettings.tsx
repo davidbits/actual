@@ -5,7 +5,7 @@ import { Button } from '@actual-app/components/button';
 import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 
-import { useLoginMethod, useMultiuserEnabled } from '#components/ServerContext';
+import { useLoginMethod } from '#components/ServerContext';
 import { useSyncServerStatus } from '#hooks/useSyncServerStatus';
 import { pushModal } from '#modals/modalsSlice';
 import { useDispatch } from '#redux';
@@ -15,7 +15,6 @@ import { SettingsRow } from './SettingsRow';
 export function AuthSettings() {
   const { t } = useTranslation();
 
-  const multiuserEnabled = useMultiuserEnabled();
   const loginMethod = useLoginMethod();
   const dispatch = useDispatch();
   const serverStatus = useSyncServerStatus();
@@ -32,7 +31,7 @@ export function AuthSettings() {
     <SettingsRow
       title={t('Authentication method')}
       description={t(
-        'Enable OpenID to let users log in through an OpenID provider instead of the server password. OpenID is required for multi-user mode.',
+        'Use OpenID to sign in through your identity provider instead of the server password.',
       )}
       control={
         isUsingPassword ? (
@@ -66,11 +65,6 @@ export function AuthSettings() {
       {isOffline && (
         <Text style={{ color: theme.warningText }}>
           <Trans>Server is offline. OpenID settings are unavailable.</Trans>
-        </Text>
-      )}
-      {!isUsingPassword && multiuserEnabled && (
-        <Text style={{ color: theme.errorText }}>
-          <Trans>Disabling OpenID will deactivate multi-user mode.</Trans>
         </Text>
       )}
     </SettingsRow>

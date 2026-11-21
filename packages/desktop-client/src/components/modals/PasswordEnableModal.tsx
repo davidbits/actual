@@ -19,7 +19,6 @@ import {
 } from '#components/manager/subscribe/ConfirmPasswordForm';
 import {
   useAvailableLoginMethods,
-  useMultiuserEnabled,
   useRefreshLoginMethods,
 } from '#components/ServerContext';
 import { popModal } from '#modals/modalsSlice';
@@ -38,7 +37,6 @@ export function PasswordEnableModal({
   const dispatch = useDispatch();
 
   const [error, setError] = useState<string | null>(null);
-  const multiuserEnabled = useMultiuserEnabled();
   const availableLoginMethods = useAvailableLoginMethods();
   const refreshLoginMethods = useRefreshLoginMethods();
 
@@ -133,15 +131,6 @@ export function PasswordEnableModal({
                 'After disabling OpenID all sessions will be closed and existing API keys will be revoked',
               )}
             />
-            {multiuserEnabled && (
-              <Label
-                style={{
-                  ...styles.verySmallText,
-                  color: theme.errorText,
-                }}
-                title={t('Multi-user will not work after disabling')}
-              />
-            )}
             {error && <ErrorAlert>{error}</ErrorAlert>}
           </View>
         </>
