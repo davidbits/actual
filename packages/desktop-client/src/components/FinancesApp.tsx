@@ -27,6 +27,7 @@ import { MobileNavTabs } from './mobile/MobileNavTabs';
 import { TransactionEdit } from './mobile/transactions/TransactionEdit';
 import { Notifications } from './Notifications';
 import { MobilePageHeaderProvider, MobilePageHeaderSlot } from './Page';
+import { PortfolioPage } from './portfolio/PortfolioPage';
 import { Reports } from './reports';
 import { NarrowAlternate, WideComponent } from './responsive';
 import {
@@ -200,6 +201,7 @@ export function FinancesApp() {
                   <Route path="/" element={<StartPageRedirect />} />
 
                   <Route path="/reports/*" element={<Reports />} />
+                  <Route path="/portfolio" element={<PortfolioPage />} />
 
                   <Route
                     path="/budget"

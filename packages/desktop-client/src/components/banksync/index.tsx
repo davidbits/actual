@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
+import { Button } from '@actual-app/components/button';
 import { styles } from '@actual-app/components/styles';
 import { Text } from '@actual-app/components/text';
 import { spacing } from '@actual-app/components/tokens';
@@ -8,6 +9,7 @@ import { View } from '@actual-app/components/view';
 import type { AccountEntity } from '@actual-app/core/types/models';
 
 import { useAccounts } from '#hooks/useAccounts';
+import { useNavigate } from '#hooks/useNavigate';
 import { pushModal } from '#modals/modalsSlice';
 import { useDispatch } from '#redux';
 
@@ -24,6 +26,7 @@ import { useBuiltInBankSyncProviders } from './useBuiltInBankSyncProviders';
 
 export function BankSync() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { data: accounts = [] } = useAccounts();
   const dispatch = useDispatch();
   const syncSourceReadable = useMemo(() => getSyncSourceReadable(t), [t]);
@@ -83,6 +86,13 @@ export function BankSync() {
 
   return (
     <View style={{ flexShrink: 0, gap: spacing.xl, paddingBottom: spacing.xl }}>
+      <Button
+        onPress={() => {
+          void navigate('/portfolio');
+        }}
+      >
+        <Trans>Exchange portfolio</Trans>
+      </Button>
       <BuiltInProviders
         providers={providers}
         syncServerStatus={syncServerStatus}

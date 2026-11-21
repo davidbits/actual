@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
+import { Button } from '@actual-app/components/button';
 import { styles } from '@actual-app/components/styles';
 import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
@@ -112,6 +113,13 @@ export function MobileBankSyncPage() {
       padding={0}
     >
       <View style={{ padding: 15, flexShrink: 0 }}>
+        <Button
+          onPress={() => {
+            void navigate('/portfolio');
+          }}
+        >
+          <Trans>Exchange portfolio</Trans>
+        </Button>
         <BuiltInProviders
           providers={providers}
           syncServerStatus={syncServerStatus}
