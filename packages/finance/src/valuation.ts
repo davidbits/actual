@@ -38,7 +38,11 @@ export function valueHoldings(
         ? new Exact(net).times(quantity(price.price)).toFixed()
         : null,
       price,
-      stale: price ? at - price.timestamp > 24 * 60 * 60 * 1000 : true,
+      stale:
+        !price ||
+        at - price.timestamp > 24 * 60 * 60 * 1000 ||
+        (holding.observedAt !== undefined &&
+          at - holding.observedAt > 60 * 60 * 1000),
     };
   });
   return {

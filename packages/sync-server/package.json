@@ -89,6 +89,7 @@
   },
   "dependencies": {
     "@actual-app/crdt": "workspace:*",
+    "@actual-app/finance": "workspace:*",
     "@actual-app/web": "workspace:*",
     "akahu": "^2.6.0",
     "argon2": "^0.45.1",

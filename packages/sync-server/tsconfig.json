@@ -23,6 +23,9 @@
       "path": "../crdt"
     },
     {
+      "path": "../finance"
+    },
+    {
       "path": "../desktop-client"
     }
   ],

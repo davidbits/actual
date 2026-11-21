@@ -23,6 +23,9 @@
     },
     {
       "path": "../loot-core"
+    },
+    {
+      "path": "../finance"
     }
   ],
   "include": [

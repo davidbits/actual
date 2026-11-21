@@ -77,6 +77,7 @@ __metadata:
   resolution: "@actual-app/core@workspace:packages/loot-core"
   dependencies:
     "@actual-app/crdt": "workspace:*"
+    "@actual-app/finance": "workspace:*"
     "@actual-app/vite-plugin-peggy": "workspace:*"
     "@jlongster/sql.js": "npm:^1.6.7"
     "@rschedule/core": "npm:^1.5.0"
@@ -137,7 +138,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@actual-app/finance@workspace:packages/finance":
+"@actual-app/finance@workspace:*, @actual-app/finance@workspace:packages/finance":
   version: 0.0.0-use.local
   resolution: "@actual-app/finance@workspace:packages/finance"
   dependencies:
@@ -154,6 +155,7 @@ __metadata:
   resolution: "@actual-app/sync-server@workspace:packages/sync-server"
   dependencies:
     "@actual-app/crdt": "workspace:*"
+    "@actual-app/finance": "workspace:*"
     "@actual-app/web": "workspace:*"
     "@types/bcrypt": "npm:^6.0.0"
     "@types/better-sqlite3": "npm:^9.6.0"
@@ -211,6 +213,7 @@ __metadata:
   dependencies:
     "@actual-app/components": "workspace:*"
     "@actual-app/core": "workspace:*"
+    "@actual-app/finance": "workspace:*"
     "@babel/core": "npm:^8.0.7"
     "@codemirror/autocomplete": "npm:^6.20.3"
     "@codemirror/language": "npm:^6.13.1"

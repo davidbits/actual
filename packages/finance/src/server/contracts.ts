@@ -16,6 +16,7 @@ export type Resource = {
   method?: 'GET' | 'POST';
   path: string;
   public?: boolean;
+  subaccountId?: string;
 };
 
 export type Request = (
@@ -43,7 +44,25 @@ export type AdapterDependencies = {
 export type AdapterRegistration = {
   definition: ProviderDefinition;
   resources: Resource[];
+  transport: TransportDefinition;
   create(dependencies: AdapterDependencies): ExchangeAdapter;
+};
+
+export type Signer = (input: {
+  credentials: Credentials;
+  timestamp: string;
+  method: string;
+  path: string;
+  params: URLSearchParams;
+  subaccountId?: string;
+}) => { headers: Record<string, string>; query: string; body?: string };
+
+export type TransportDefinition = {
+  hosts: Partial<Record<NonNullable<Resource['host']>, string>> & {
+    spot: string;
+  };
+  signer: Signer;
+  clock?: { resource: Resource; read(value: unknown): number };
 };
 
 export type TransportOptions = {

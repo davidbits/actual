@@ -9,6 +9,7 @@ export type FinanceAccount = {
 };
 
 export type Holding = {
+  observedAt?: number;
   accountId: string;
   asset: string;
   quantity: Quantity;

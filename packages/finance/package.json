@@ -9,6 +9,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./server": {
+      "types": "./src/server/index.ts",
       "node": "./src/server/index.ts"
     }
   },
