@@ -32,6 +32,7 @@ function f(type: string, opts?: Record<string, unknown>) {
 // table name the internal table that is updated.
 
 export const schema = {
+  finance_cache: { id: f('id'), payload: f('string'), tombstone: f('boolean') },
   transactions: {
     id: f('id'),
     is_parent: f('boolean'),

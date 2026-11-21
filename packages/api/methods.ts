@@ -13,6 +13,7 @@ import type {
 import type { ImportableBudgetType } from '@actual-app/core/server/importers/index';
 import type { Query } from '@actual-app/core/shared/query';
 import type { ImportTransactionsOpts } from '@actual-app/core/types/api-handlers';
+import type { Handlers } from '@actual-app/core/types/handlers';
 import type {
   DashboardPageEntity,
   DashboardWidgetEntity,
@@ -556,4 +557,33 @@ export function updateDashboard(
 
 export function copyDashboardWidget(id: string, targetDashboardPageId: string) {
   return send('dashboard-copy-widget', { id, targetDashboardPageId });
+}
+
+/** Cached portfolio remains available offline. Pull or sync explicitly for fresh provider data. */
+export function getPortfolio() {
+  return send('finance/get');
+}
+export function pullPortfolio() {
+  return send('finance/pull');
+}
+export function syncPortfolio(id?: string) {
+  return send('finance/sync', { id });
+}
+export function getPortfolioHistory(at: number) {
+  return send('finance/history', { at });
+}
+export function getFinanceProviders() {
+  return send('finance/providers');
+}
+export function connectFinance(
+  input: Parameters<Handlers['finance/connect']>[0],
+) {
+  return send('finance/connect', input);
+}
+export function disconnectFinance(id: string) {
+  return send('finance/remove', { id });
+}
+
+export function importPortfolio(id: string, document: unknown) {
+  return send('finance/import', { id, document });
 }

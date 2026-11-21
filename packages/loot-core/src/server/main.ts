@@ -22,6 +22,7 @@ import * as encryption from './encryption';
 import { app as encryptionApp } from './encryption/app';
 import { DocumentDirError, withErrorCode } from './errors';
 import { app as filtersApp } from './filters/app';
+import { app as financeApp } from './finance/app';
 import { app as forecastApp } from './forecast/app';
 import { app as formulasApp } from './formulas/app';
 import { app } from './main-app';
@@ -137,6 +138,7 @@ app.combine(
   dashboardApp,
   notesApp,
   preferencesApp,
+  financeApp,
   toolsApp,
   filtersApp,
   formulasApp,

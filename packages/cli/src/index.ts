@@ -4,6 +4,7 @@ import { registerAccountsCommand } from './commands/accounts';
 import { registerBudgetsCommand } from './commands/budgets';
 import { registerCategoriesCommand } from './commands/categories';
 import { registerCategoryGroupsCommand } from './commands/category-groups';
+import { registerFinanceCommand } from './commands/finance';
 import { registerPayeesCommand } from './commands/payees';
 import { registerQueryCommand } from './commands/query';
 import { registerRulesCommand } from './commands/rules';
@@ -58,6 +59,7 @@ program
   .option('--verbose', 'Show informational messages', false);
 
 registerAccountsCommand(program);
+registerFinanceCommand(program);
 registerBudgetsCommand(program);
 registerCategoriesCommand(program);
 registerCategoryGroupsCommand(program);
