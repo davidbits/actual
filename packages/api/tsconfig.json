@@ -11,6 +11,7 @@
     "noEmit": false,
     "declaration": true,
     "declarationMap": true,
+    "emitDeclarationOnly": true,
     "outDir": "dist",
     "rootDir": ".",
     "declarationDir": "@types",

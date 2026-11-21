@@ -8,14 +8,16 @@ import {
 import { peggyLoader } from '@actual-app/vite-plugin-peggy';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig } from 'vite';
+import type { Plugin } from 'vite';
 import { configDefaults } from 'vitest/config';
 
 const distDir = path.resolve(__dirname, 'dist');
 const typesDir = path.resolve(__dirname, '@types');
 
-function cleanOutputDirs() {
+function cleanOutputDirs(): Plugin {
   return {
     name: 'clean-output-dirs',
+    apply: 'build',
     buildStart() {
       if (fs.existsSync(distDir)) fs.rmSync(distDir, { recursive: true });
       if (fs.existsSync(typesDir)) fs.rmSync(typesDir, { recursive: true });
@@ -27,9 +29,10 @@ function cleanOutputDirs() {
 // fs.migrationsPath / bundledDatabasePath in loot-core), so copy them next to
 // the bundle. The browser build embeds its own copies, so nothing else needs to
 // be on disk.
-function copyNodeRuntimeAssets() {
+function copyNodeRuntimeAssets(): Plugin {
   return {
     name: 'copy-node-runtime-assets',
+    apply: 'build',
     closeBundle() {
       fs.cpSync(migrationsDir, path.join(distDir, 'migrations'), {
         recursive: true,

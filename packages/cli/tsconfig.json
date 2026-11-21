@@ -5,6 +5,8 @@
     "lib": ["ES2021"],
     "types": ["vitest/globals", "node"],
     "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
     "strict": true,
     "outDir": "dist",
     "tsBuildInfoFile": "dist/.tsbuildinfo"
