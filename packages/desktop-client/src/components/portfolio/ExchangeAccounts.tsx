@@ -47,6 +47,11 @@ export function ExchangeAccounts({
           color,
           fontSize: 13,
           fontWeight: 600,
+          ':hover': {
+            backgroundColor: mobile
+              ? theme.tableRowBackgroundHover
+              : theme.sidebarItemBackgroundHover,
+          },
         }}
         activeStyle={{
           color: mobile ? theme.pageTextLink : theme.sidebarItemTextSelected,

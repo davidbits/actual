@@ -185,6 +185,8 @@ for (const redesign of [false, true]) {
       page.getByRole('button', { name: 'Sync connection' }),
     ).toBeVisible();
     await expect(page).toMatchThemeScreenshots();
+    await group.getByRole('link', { name: /^Exchanges/ }).hover();
+    await expect(group).toMatchThemeScreenshots();
     await page.close();
   });
 }
