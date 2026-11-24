@@ -11,14 +11,7 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
-  "references": [
-    {
-      "path": "../api"
-    },
-    {
-      "path": "../finance"
-    }
-  ],
+  "references": [{ "path": "../api" }],
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "coverage"]
 }

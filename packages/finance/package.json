@@ -11,10 +11,6 @@
     "./server": {
       "types": "./src/server/index.ts",
       "node": "./src/server/index.ts"
-    },
-    "./statements": {
-      "types": "./src/server/statements/index.ts",
-      "node": "./src/server/statements/index.ts"
     }
   },
   "scripts": {
@@ -23,7 +19,6 @@
     "test": "vitest --run"
   },
   "dependencies": {
-    "csv-parse": "^7.0.3",
     "decimal.js": "^10.6.0"
   },
   "devDependencies": {
