@@ -25,6 +25,7 @@ describe('finance collection service', () => {
         data.set(id, collection);
       },
       snapshots: id => data.get(id),
+      snapshotRange: id => (data.has(id) ? [data.get(id)!] : []),
       saveSnapshot: () => {
         /* empty */
       },

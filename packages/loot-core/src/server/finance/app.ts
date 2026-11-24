@@ -1,8 +1,10 @@
-import { emptyPortfolio } from '@actual-app/finance';
+import { emptyPortfolio, timelineDate } from '@actual-app/finance';
 import type {
   ConnectInput,
   Portfolio,
+  PortfolioTimeline,
   ProviderDefinition,
+  TimelineRequest,
 } from '@actual-app/finance';
 
 import * as asyncStorage from '#platform/server/asyncStorage';
@@ -13,7 +15,11 @@ import { mutator } from '#server/mutators';
 import { getPrefs } from '#server/prefs';
 import { getServer } from '#server/server-config';
 
-async function request<T>(path: string, body: unknown = {}): Promise<T> {
+async function request<T>(
+  path: string,
+  body: unknown = {},
+  timeout = 10 * 60000,
+): Promise<T> {
   const server = getServer()?.BASE_SERVER.replace(/\/$/, '');
   const fileId = getPrefs()?.cloudFileId;
   const token = await asyncStorage.getItem('user-token');
@@ -28,7 +34,7 @@ async function request<T>(path: string, body: unknown = {}): Promise<T> {
       'X-Actual-File-Id': fileId,
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(10 * 60000),
+    signal: AbortSignal.timeout(timeout),
   });
   if (!response.ok) throw new Error('Finance request failed');
   const result = (await response.json()) as { status: string; data: T };
@@ -110,6 +116,12 @@ async function connect(input: ConnectInput) {
 }
 async function remove({ id }: { id: string }) {
   await request('remove', { id });
+  const timelines = await db.all<{ id: string }>(
+    "SELECT id FROM finance_cache WHERE id LIKE 'timeline:%' AND tombstone=0",
+  );
+  for (const row of timelines) {
+    await db.update('finance_cache', { id: row.id, tombstone: 1 });
+  }
   return pull();
 }
 async function history({ at }: { at: number }) {
@@ -120,6 +132,46 @@ async function importData({ id, document }: { id: string; document: unknown }) {
 }
 async function providers() {
   return request<ProviderDefinition[]>('providers');
+}
+
+async function timeline(
+  input: TimelineRequest,
+): Promise<{ timeline?: PortfolioTimeline; offline: boolean }> {
+  // Finite cache slots per connection/range, with historical reads kept separate.
+  const id = `timeline:${input.connectionId ?? 'all'}:${input.days}:${input.at === undefined ? 'current' : 'historical'}`;
+  const row = await db.first<{ payload: string }>(
+    'SELECT payload FROM finance_cache WHERE id=? AND tombstone=0 AND payload IS NOT NULL',
+    [id],
+  );
+  const cached = row
+    ? (JSON.parse(row.payload) as PortfolioTimeline)
+    : undefined;
+  try {
+    const value = await request<PortfolioTimeline>('timeline', input, 15000);
+    if (
+      !Array.isArray(value.points) ||
+      !Array.isArray(value.assets) ||
+      !Number.isFinite(value.asOf)
+    ) {
+      throw new Error('Invalid graph history response');
+    }
+    const content = (data: PortfolioTimeline) =>
+      JSON.stringify({ ...data, asOf: 0 });
+    if (!cached || content(cached) !== content(value)) {
+      await db.update('finance_cache', {
+        id,
+        payload: JSON.stringify(value),
+        tombstone: 0,
+      });
+    }
+    return { timeline: value, offline: false };
+  } catch {
+    const usable =
+      cached &&
+      (input.at === undefined ||
+        (cached.asOf <= input.at && cached.through === timelineDate(input.at)));
+    return { timeline: usable ? cached : undefined, offline: true };
+  }
 }
 
 async function read() {
@@ -144,6 +196,7 @@ export type FinanceHandlers = {
   'finance/history': typeof history;
   'finance/providers': typeof providers;
   'finance/import': typeof importData;
+  'finance/timeline': typeof timeline;
 };
 
 export const app = createApp<FinanceHandlers>();
@@ -157,3 +210,4 @@ app.method('finance/remove', mutator(remove));
 app.method('finance/history', history);
 
 app.method('finance/import', mutator(importData));
+app.method('finance/timeline', mutator(timeline));

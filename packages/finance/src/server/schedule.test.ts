@@ -43,6 +43,10 @@ function setup() {
         .get(id)
         ?.filter(c => c.timestamp <= at)
         .at(-1),
+    snapshotRange: (id, from, through) =>
+      (snapshots.get(id) ?? []).filter(
+        c => c.timestamp >= from && c.timestamp <= through,
+      ),
     saveSnapshot: (id, c) => {
       snapshots.set(id, [...(snapshots.get(id) ?? []), structuredClone(c)]);
     },
@@ -117,6 +121,26 @@ function setup() {
 }
 
 describe('automatic exchange refresh', () => {
+  it('restricts graph history to authorized connections and bounded dates', async () => {
+    const s = setup();
+    await s.service.tick();
+    expect(s.service.timeline('budget', { days: 7 }).points.at(-1)?.value).toBe(
+      '20',
+    );
+    expect(s.service.timeline('other-budget', { days: 7 }).assets).toEqual([]);
+    expect(() =>
+      s.service.timeline('other-budget', {
+        days: 7,
+        connectionId: s.connection.id,
+      }),
+    ).toThrow('Connection not found');
+    expect(() => s.service.timeline('budget', { days: 10000 })).toThrow(
+      'Invalid timeline range',
+    );
+    expect(() =>
+      s.service.timeline('budget', { days: 7, at: s.now() + 1 }),
+    ).toThrow('Invalid timeline range');
+  });
   it('collects once due, honors edits, pauses, and rejects intervals longer than a day', async () => {
     const s = setup();
     await s.service.tick();

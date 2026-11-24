@@ -36,6 +36,12 @@ export function createFinanceRouter(
   router.post('/list', (_req, res) =>
     res.json({ status: 'ok', data: service.portfolio(res.locals.fileId) }),
   );
+  router.post('/timeline', (req, res) =>
+    res.json({
+      status: 'ok',
+      data: service.timeline(res.locals.fileId, req.body),
+    }),
+  );
   router.post('/connect', (req, res) => {
     const input: ConnectInput = req.body;
     // Detailed validation lives in the shared service and is used by UI and CLI equally.

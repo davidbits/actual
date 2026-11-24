@@ -110,6 +110,39 @@ export type Credentials = {
   passphrase?: string;
 };
 
+export type TimelineRequest = {
+  days: number;
+  connectionId?: string;
+  at?: number;
+};
+
+export type AssetObservation = {
+  quantity: Quantity | null;
+  value: Quantity | null;
+  price?: Price;
+  partial: boolean;
+  stale: boolean;
+};
+
+export type TimelinePoint = {
+  date: string;
+  value: Quantity | null;
+  assets: Record<string, AssetObservation>;
+  observedAt?: number;
+  observedConnections: number;
+  totalConnections: number;
+  partial: boolean;
+  stale: boolean;
+};
+
+export type PortfolioTimeline = {
+  from: string;
+  through: string;
+  asOf: number;
+  assets: string[];
+  points: TimelinePoint[];
+};
+
 export type ConnectInput = {
   id?: string;
   provider: string;

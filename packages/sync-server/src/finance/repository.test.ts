@@ -71,6 +71,20 @@ it('persists encrypted state and prevents a finished job from restoring a delete
     expect(reopened.snapshots(id, 999)).toBeUndefined();
     expect(reopened.snapshots(id, 1500)?.holdings).toEqual(checkpoint.holdings);
     expect(reopened.collection(id)?.holdings).toEqual([]);
+    expect(reopened.snapshotRange(id, 0, 2000).map(c => c.timestamp)).toEqual([
+      2000,
+    ]);
+    expect(reopened.snapshotRange(id, 0, 1500).map(c => c.timestamp)).toEqual([
+      1000,
+    ]);
+    const midnight = Date.parse('2026-01-01T22:00:00Z');
+    for (const timestamp of [midnight - 2, midnight - 1, midnight]) {
+      repository.saveSnapshot(id, { ...checkpoint, timestamp });
+    }
+    expect(
+      reopened.snapshotRange(id, midnight - 10, midnight).map(c => c.timestamp),
+    ).toEqual([midnight - 1, midnight]);
+    expect(reopened.snapshotRange('unrelated', 0, midnight)).toEqual([]);
     expect(
       reopened
         .prices(entry.fileId)

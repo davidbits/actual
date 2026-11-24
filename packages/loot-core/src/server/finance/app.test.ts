@@ -1,3 +1,4 @@
+import type { PortfolioTimeline } from '@actual-app/finance';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import * as asyncStorage from '#platform/server/asyncStorage';
@@ -15,6 +16,78 @@ beforeEach(async () => {
 });
 
 afterEach(() => vi.restoreAllMocks());
+
+it('caches graph history by connection/range, avoids clock-only writes and handles offline reads', async () => {
+  vi.spyOn(prefs, 'getPrefs').mockReturnValue({
+    id: 'fixture',
+    budgetName: 'Fixture',
+    cloudFileId: 'fixture-cloud',
+  });
+  vi.spyOn(server, 'getServer').mockReturnValue(
+    server.getServer('http://finance.example.test'),
+  );
+  vi.spyOn(asyncStorage, 'getItem').mockResolvedValue('fixture-token');
+  const timeline: PortfolioTimeline = {
+    from: '2026-01-01',
+    through: '2026-01-07',
+    asOf: Date.parse('2026-01-07T10:00:00Z'),
+    assets: [],
+    points: [],
+  };
+  const fetcher = vi.mocked(financeFetch);
+  const response = (value: PortfolioTimeline) =>
+    new Response(JSON.stringify({ status: 'ok', data: value }));
+  fetcher.mockResolvedValueOnce(response(timeline));
+  expect(
+    await app.handlers['finance/timeline']({ days: 7, connectionId: 'one' }),
+  ).toEqual({ timeline, offline: false });
+  fetcher.mockResolvedValueOnce(
+    response({ ...timeline, asOf: timeline.asOf + 1000 }),
+  );
+  await app.handlers['finance/timeline']({ days: 7, connectionId: 'one' });
+  fetcher.mockRejectedValue(new Error('offline'));
+  expect(
+    await app.handlers['finance/timeline']({ days: 7, connectionId: 'one' }),
+  ).toEqual({ timeline, offline: true });
+  expect(
+    (await app.handlers['finance/timeline']({ days: 30, connectionId: 'one' }))
+      .timeline,
+  ).toBeUndefined();
+  expect(
+    (await app.handlers['finance/timeline']({ days: 7, connectionId: 'two' }))
+      .timeline,
+  ).toBeUndefined();
+  expect(
+    (
+      await app.handlers['finance/timeline']({
+        days: 7,
+        connectionId: 'one',
+        at: timeline.asOf - 1000,
+      })
+    ).timeline,
+  ).toBeUndefined();
+  fetcher
+    .mockResolvedValueOnce(new Response(JSON.stringify({ status: 'ok' })))
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          status: 'ok',
+          data: {
+            version: 1,
+            collections: {},
+            connections: [],
+            prices: [],
+            updatedAt: 0,
+          },
+        }),
+      ),
+    );
+  await app.handlers['finance/remove']({ id: 'one' });
+  expect(
+    (await app.handlers['finance/timeline']({ days: 7, connectionId: 'one' }))
+      .timeline,
+  ).toBeUndefined();
+});
 
 it('returns an offline state for unavailable background reads instead of throwing', async () => {
   vi.spyOn(prefs, 'getPrefs').mockReturnValue({

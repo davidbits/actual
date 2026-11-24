@@ -92,6 +92,17 @@ export function createFinanceRepository(
       );
       return row ? vault.decrypt<Collection>(row.payload, id) : undefined;
     },
+    snapshotRange(id, from, through) {
+      // Decrypt only the latest checkpoint per South African calendar day.
+      const rows: { payload: string }[] = db.all(
+        `SELECT payload FROM finance_snapshots WHERE connection_id=? AND timestamp IN (
+          SELECT MAX(timestamp) FROM finance_snapshots WHERE connection_id=? AND timestamp>=? AND timestamp<=?
+          GROUP BY CAST((timestamp+7200000)/86400000 AS INTEGER)
+        ) ORDER BY timestamp`,
+        [id, id, from, through],
+      );
+      return rows.map(row => vault.decrypt<Collection>(row.payload, id));
+    },
     prices(fileId) {
       const rows: { payload: string }[] = db.all(
         'SELECT payload FROM finance_prices WHERE file_id=?',

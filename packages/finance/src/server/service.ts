@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { parseFinanceImport } from '#import';
 import { refreshInterval } from '#schedule';
+import { buildPortfolioTimeline, timelineStart } from '#timeline';
 import type {
   Collection,
   ConnectInput,
@@ -9,6 +10,7 @@ import type {
   Credentials,
   Portfolio,
   Price,
+  TimelineRequest,
 } from '#types';
 import { historicalHoldings } from '#valuation';
 
@@ -28,6 +30,11 @@ export type FinanceRepository = {
   collection(connectionId: string): Collection | undefined;
   saveCollection(connectionId: string, collection: Collection): void;
   snapshots(connectionId: string, at: number): Collection | undefined;
+  snapshotRange(
+    connectionId: string,
+    from: number,
+    through: number,
+  ): Collection[];
   saveSnapshot(connectionId: string, collection: Collection): void;
   prices(fileId: string): Price[];
   savePrices(fileId: string, prices: Price[]): void;
@@ -241,6 +248,32 @@ export function createFinanceService(dependencies: {
   return {
     portfolio,
     sync,
+    timeline(fileId: string, input: TimelineRequest) {
+      const at = input.at ?? now();
+      if (
+        ![7, 30, 90, 365].includes(input.days) ||
+        !Number.isSafeInteger(at) ||
+        at < 0 ||
+        at > now()
+      ) {
+        throw new Error('Invalid timeline range');
+      }
+      const entries = connections(fileId).filter(
+        c => !input.connectionId || c.id === input.connectionId,
+      );
+      if (input.connectionId && !entries.length) {
+        throw new Error('Connection not found');
+      }
+      const from = timelineStart(at, input.days);
+      return buildPortfolioTimeline(
+        Object.fromEntries(
+          entries.map(c => [c.id, repository.snapshotRange(c.id, from, at)]),
+        ),
+        repository.prices(fileId),
+        from,
+        at,
+      );
+    },
     connect(fileId: string, userId: string, input: ConnectInput) {
       const existing = input.id
         ? connections(fileId).find(c => c.id === input.id)

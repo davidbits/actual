@@ -13,6 +13,13 @@ describe('finance budget authorization', () => {
   const db = getAccountDb();
   const service = {
     portfolio: vi.fn(() => emptyPortfolio()),
+    timeline: vi.fn(() => ({
+      from: '2026-01-01',
+      through: '2026-01-07',
+      asOf: 0,
+      assets: [],
+      points: [],
+    })),
     sync: vi.fn(async () => emptyPortfolio()),
     historical: vi.fn(async () => emptyPortfolio()),
     tick: vi.fn(async () => {
@@ -72,6 +79,31 @@ describe('finance budget authorization', () => {
       .send({});
     expect(response.status).toBe(403);
     expect(service.sync).not.toHaveBeenCalled();
+  });
+  it('requires budget authorization before reading timeline history', async () => {
+    expect(
+      (await request(app).post('/timeline').send({ days: 7 })).status,
+    ).toBe(401);
+    expect(
+      (
+        await request(app)
+          .post('/timeline')
+          .set('X-ACTUAL-TOKEN', 'valid-token-user')
+          .set('X-Actual-File-Id', fileId)
+          .send({ days: 7 })
+      ).status,
+    ).toBe(403);
+    expect(service.timeline).not.toHaveBeenCalled();
+    expect(
+      (
+        await request(app)
+          .post('/timeline')
+          .set('X-ACTUAL-TOKEN', 'valid-token')
+          .set('X-Actual-File-Id', fileId)
+          .send({ days: 7 })
+      ).status,
+    ).toBe(200);
+    expect(service.timeline).toHaveBeenCalledWith(fileId, { days: 7 });
   });
   it('never exposes thrown credential details', async () => {
     service.connect.mockImplementationOnce(() => {
