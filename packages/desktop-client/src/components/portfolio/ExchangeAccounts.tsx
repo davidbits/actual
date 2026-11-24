@@ -53,6 +53,14 @@ export function ExchangeAccounts({
         }}
       >
         <AlignedText
+          style={
+            variant === 'classic'
+              ? {
+                  borderBottom: '1.5px solid rgba(255,255,255,0.4)',
+                  paddingBottom: 3,
+                }
+              : undefined
+          }
           left={<Trans>Exchanges</Trans>}
           right={
             <View
