@@ -41,6 +41,24 @@ they are not investment returns. The comparison is cached for offline use.
 Use **Valuation date → View history** to inspect earlier saved checkpoints;
 dates preceding collected or imported evidence may be unavailable.
 
+**Graphs** plots priced portfolio value and selectable asset holding value,
+ZAR price/rate, or net units for 7, 30, 90, or 365 days. The daily history table
+shows the same observations, oldest included holdings timestamp, and connection
+coverage. The selected exchange and historical valuation date also constrain
+graphs. South African calendar days use the latest saved holdings checkpoint
+from each day and prices available at that day's close (or the selected instant).
+No holdings are fabricated for days without checkpoints: those days break the
+line. Missing prices and incomplete connections produce explicitly partial
+valuations, never assumed zero wealth. Stale observations remain marked.
+
+The read-only, budget-authorized `/finance/timeline` endpoint loads daily
+checkpoints from encrypted storage and computes exact decimal values before
+chart rendering. A bounded set of per-connection/range caches travels through
+budget sync for offline graph access. Opening Graphs polls saved history every
+minute; it does not trigger exchange collection or backfill market prices.
+Privacy mode hides graphs and table amounts. Graphs show observed value changes,
+including deposits, withdrawals and trades; they do not calculate investment returns.
+
 Holdings retain native decimal strings; valuations use ZAR. They are separate
 from envelope-budget amounts and do not increase money available to budget.
 Debt and derivative settlement P&L are included according to each provider's

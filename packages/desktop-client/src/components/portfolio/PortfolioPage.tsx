@@ -24,6 +24,7 @@ import { PortfolioActivity } from './PortfolioActivity';
 import { PortfolioChanges } from './PortfolioChanges';
 import { PortfolioConnections } from './PortfolioConnections';
 import { dateInputClassName } from './PortfolioField';
+import { PortfolioGraphs } from './PortfolioGraphs';
 import { PortfolioHoldings } from './PortfolioHoldings';
 import { PortfolioPositions } from './PortfolioPositions';
 import { PortfolioPrices } from './PortfolioPrices';
@@ -118,6 +119,7 @@ export function PortfolioPage() {
     ['positions', t('Positions')],
     ['prices', t('Prices and rates')],
     ['changes', t('Changes')],
+    ['graphs', t('Graphs')],
     ['connections', t('Connections')],
   ];
   return (
@@ -334,6 +336,9 @@ export function PortfolioPage() {
             </TabPanel>
             <TabPanel id="changes">
               <PortfolioChanges portfolio={portfolio} at={at} />
+            </TabPanel>
+            <TabPanel id="graphs">
+              <PortfolioGraphs connectionId={connectionId} at={history?.at} />
             </TabPanel>
             <TabPanel id="connections">
               <PortfolioConnections
