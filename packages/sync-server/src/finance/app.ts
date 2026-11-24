@@ -11,6 +11,7 @@ import { canAccessActiveFile } from '#services/user-service';
 import { validateBankSyncSession } from '#util/validate-budget-session';
 
 import { createFinanceRepository } from './repository';
+import { scheduleFinanceSync } from './scheduler';
 import { createFinanceVault } from './vault';
 
 export function createFinanceRouter(
@@ -114,18 +115,5 @@ handlers.use((req, res, next) =>
 );
 
 export function startFinanceScheduler() {
-  let running = false;
-  const timer = setInterval(async () => {
-    if (running) return;
-    running = true;
-    try {
-      await getFinanceService().tick();
-    } catch {
-      /* Preserve persisted state; retry on next tick. */
-    } finally {
-      running = false;
-    }
-  }, 60000);
-  timer.unref();
-  return () => clearInterval(timer);
+  return scheduleFinanceSync(() => getFinanceService().tick());
 }

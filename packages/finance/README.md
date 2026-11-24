@@ -17,6 +17,29 @@ server collects enabled connections while browsers are closed. The browser
 copies the latest portfolio into the budget's device-sync stream for offline reading, protected by budget encryption
 when enabled. Server collection and budget-cache refresh are separate: open
 the portfolio or select **Refresh saved data** to obtain the latest collection.
+The sidebar and portfolio also poll saved server data every minute while open.
+
+In **Connections**, edit **Refresh interval in minutes** and select **Save
+schedule**. The default is 15 minutes; supported intervals are 5–1,440 minutes
+(at least daily). Previously saved intervals longer than a day are treated as
+daily. Pause/resume is explicit and keeps the saved interval. Each connection
+shows its last successful sync and next due attempt. The server checks due
+connections immediately on startup and once per minute thereafter, with leases
+to prevent concurrent collection. A stopped/sleeping server cannot collect;
+overdue work resumes when it starts. Outages retain previous observations and
+show an error; retries use the configured interval. Keep the local server
+running for unattended updates.
+
+Every collection saves a durable encrypted holdings/positions checkpoint.
+Market and FX quotes retain their source and timestamp instead of replacing
+older rates. **Changes** compares native net units, ZAR rates, and holding
+values against the latest checkpoint at or before one day before the valuation
+date. It includes exited assets and shows actual observation dates. Missing
+checkpoints/rates are unavailable, and stale or incomplete observations are
+flagged. Value changes include transfers, trades, liabilities, and price moves;
+they are not investment returns. The comparison is cached for offline use.
+Use **Valuation date → View history** to inspect earlier saved checkpoints;
+dates preceding collected or imported evidence may be unavailable.
 
 Holdings retain native decimal strings; valuations use ZAR. They are separate
 from envelope-budget amounts and do not increase money available to budget.

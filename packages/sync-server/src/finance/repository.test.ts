@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import type { Collection } from '@actual-app/finance';
 import { expect, it } from 'vitest';
 
 import { getAccountDb } from '#account-db';
@@ -40,6 +41,48 @@ it('persists encrypted state and prevents a finished job from restoring a delete
       entry.credentials,
     );
     expect(repository.connections('unrelated-budget')).toEqual([]);
+    const checkpoint: Collection = {
+      timestamp: 1000,
+      accounts: [{ id: 'spot', name: 'Synthetic spot', product: 'spot' }],
+      holdings: [{ accountId: 'spot', asset: 'BTC', quantity: '1.23456789' }],
+      positions: [],
+      events: [],
+      coverage: [{ stream: 'balances', status: 'ok' }],
+      cursors: {},
+    };
+    repository.saveCollection(id, checkpoint);
+    repository.saveCollection(id, {
+      ...checkpoint,
+      timestamp: 2000,
+      holdings: [],
+    });
+    repository.savePrices(
+      entry.fileId,
+      [1000, 2000].map(timestamp => ({
+        asset: 'BTC',
+        quote: 'ZAR',
+        price: String(timestamp),
+        timestamp,
+        source: 'synthetic',
+      })),
+    );
+    // A fresh repository/vault instance reads both dated observations after restart.
+    const reopened = createFinanceRepository(createFinanceVault(directory));
+    expect(reopened.snapshots(id, 999)).toBeUndefined();
+    expect(reopened.snapshots(id, 1500)?.holdings).toEqual(checkpoint.holdings);
+    expect(reopened.collection(id)?.holdings).toEqual([]);
+    expect(
+      reopened
+        .prices(entry.fileId)
+        .map(p => p.timestamp)
+        .sort((a, b) => a - b),
+    ).toEqual([1000, 2000]);
+    expect(
+      getAccountDb().first(
+        'SELECT payload FROM finance_snapshots WHERE connection_id=?',
+        [id],
+      ).payload,
+    ).not.toContain('1.23456789');
     expect(repository.acquire(id, 1)).toBe(true);
     expect(repository.acquire(id, 2)).toBe(false);
     repository.release(id);
@@ -49,6 +92,9 @@ it('persists encrypted state and prevents a finished job from restoring a delete
     expect(repository.connections('synthetic-budget')).toEqual([]);
   } finally {
     getAccountDb().mutate('DELETE FROM finance_connections WHERE id=?', [id]);
+    getAccountDb().mutate('DELETE FROM finance_prices WHERE file_id=?', [
+      'synthetic-budget',
+    ]);
     rmSync(directory, { recursive: true, force: true });
   }
 });

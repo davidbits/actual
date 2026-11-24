@@ -21,6 +21,7 @@ import { portfolioQuery, usePortfolio } from '#finance/queries';
 import { useNavigate } from '#hooks/useNavigate';
 
 import { PortfolioActivity } from './PortfolioActivity';
+import { PortfolioChanges } from './PortfolioChanges';
 import { PortfolioConnections } from './PortfolioConnections';
 import { dateInputClassName } from './PortfolioField';
 import { PortfolioHoldings } from './PortfolioHoldings';
@@ -62,6 +63,10 @@ export function PortfolioPage() {
   );
   const assets = new Set([
     ...Object.values(collections).flatMap(c => c.holdings.map(h => h.asset)),
+    ...connections.flatMap(
+      c =>
+        source.comparison?.collections[c.id]?.holdings.map(h => h.asset) ?? [],
+    ),
     'USD',
     'USDT',
     'ZAR',
@@ -112,6 +117,7 @@ export function PortfolioPage() {
     ['activity', t('Activity')],
     ['positions', t('Positions')],
     ['prices', t('Prices and rates')],
+    ['changes', t('Changes')],
     ['connections', t('Connections')],
   ];
   return (
@@ -325,6 +331,9 @@ export function PortfolioPage() {
             </TabPanel>
             <TabPanel id="prices">
               <PortfolioPrices prices={portfolio.prices} at={at} />
+            </TabPanel>
+            <TabPanel id="changes">
+              <PortfolioChanges portfolio={portfolio} at={at} />
             </TabPanel>
             <TabPanel id="connections">
               <PortfolioConnections

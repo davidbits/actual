@@ -73,12 +73,15 @@ async function save(portfolio: Portfolio) {
     ),
   };
   const previous = await get();
+  const content = (value: Portfolio) =>
+    JSON.stringify({
+      ...value,
+      updatedAt: 0,
+      comparison: value.comparison ? { ...value.comparison, at: 0 } : undefined,
+    });
   // A background sidebar refresh must not write a new CRDT document just
   // because the server's response timestamp changed.
-  if (
-    JSON.stringify({ ...cached, updatedAt: 0 }) !==
-    JSON.stringify({ ...previous, updatedAt: 0 })
-  ) {
+  if (content(cached) !== content(previous)) {
     await db.update('finance_cache', {
       id: 'portfolio',
       payload: JSON.stringify(cached),

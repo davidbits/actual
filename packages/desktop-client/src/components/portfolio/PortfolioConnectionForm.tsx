@@ -8,6 +8,11 @@ import { Text } from '@actual-app/components/text';
 import { theme } from '@actual-app/components/theme';
 import { View } from '@actual-app/components/view';
 import type { ConnectInput, ProviderDefinition } from '@actual-app/finance';
+import {
+  DEFAULT_REFRESH_MINUTES,
+  MAX_REFRESH_MINUTES,
+  MIN_REFRESH_MINUTES,
+} from '@actual-app/finance';
 import { css } from '@emotion/css';
 
 import { dateInputClassName, PortfolioField } from './PortfolioField';
@@ -30,7 +35,7 @@ export function PortfolioConnectionForm({
   const [passphrase, setPassphrase] = useState('');
   const [historyStart, setHistoryStart] = useState('2010-01-01');
   const [symbols, setSymbols] = useState('');
-  const [interval, setInterval] = useState('15');
+  const [interval, setInterval] = useState(String(DEFAULT_REFRESH_MINUTES));
   return (
     <form
       onSubmit={async event => {
@@ -137,8 +142,8 @@ export function PortfolioConnectionForm({
             <Input
               id={prefix + 'interval'}
               type="number"
-              min={5}
-              max={10080}
+              min={MIN_REFRESH_MINUTES}
+              max={MAX_REFRESH_MINUTES}
               required
               value={interval}
               onChangeValue={setInterval}

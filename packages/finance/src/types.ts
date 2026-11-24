@@ -99,6 +99,8 @@ export type Portfolio = {
   connections: ConnectionSummary[];
   collections: Record<string, Collection>;
   prices: Price[];
+  /** Latest saved checkpoints at or before one day before the valuation date. */
+  comparison?: { at: number; collections: Record<string, Collection> };
   updatedAt: number;
 };
 

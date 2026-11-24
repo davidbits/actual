@@ -50,6 +50,7 @@ it('does not rewrite the synced cache on unchanged background refreshes', async 
         source: 'fixture',
       },
     ],
+    comparison: { at: 50, collections: {} },
     updatedAt: 100,
   };
   const fetcher = vi.mocked(financeFetch);
@@ -59,7 +60,14 @@ it('does not rewrite the synced cache on unchanged background refreshes', async 
   await app.handlers['finance/pull']();
   fetcher.mockResolvedValueOnce(
     new Response(
-      JSON.stringify({ status: 'ok', data: { ...portfolio, updatedAt: 200 } }),
+      JSON.stringify({
+        status: 'ok',
+        data: {
+          ...portfolio,
+          updatedAt: 200,
+          comparison: { at: 150, collections: {} },
+        },
+      }),
     ),
   );
   await app.handlers['finance/pull']();

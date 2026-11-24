@@ -14,6 +14,7 @@ import { css } from '@emotion/css';
 
 import { PortfolioArchive } from './PortfolioArchive';
 import { PortfolioConnectionForm } from './PortfolioConnectionForm';
+import { PortfolioSchedule } from './PortfolioSchedule';
 import { PortfolioTable } from './PortfolioTable';
 
 export function PortfolioConnections({
@@ -106,6 +107,12 @@ export function PortfolioConnections({
                 </Button>
               </View>
             </View>
+            <PortfolioSchedule
+              key={`${connection.id}:${connection.intervalMinutes}`}
+              connection={connection}
+              busy={busy}
+              onSave={onConnect}
+            />
             {connection.error && (
               <Text role="status" style={{ color: theme.warningText }}>
                 {connection.error}

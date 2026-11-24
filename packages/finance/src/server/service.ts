@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { parseFinanceImport } from '#import';
+import { refreshInterval } from '#schedule';
 import type {
   Collection,
   ConnectInput,
@@ -52,13 +53,30 @@ export function createFinanceService(dependencies: {
     fileId: _fileId,
     userId: _userId,
     ...connection
-  }: StoredConnection): ConnectionSummary => connection;
+  }: StoredConnection): ConnectionSummary => ({
+    ...connection,
+    intervalMinutes: refreshInterval(connection.intervalMinutes),
+  });
   const connections = (fileId: string) =>
     repository.connections(fileId).filter(connection => canRead(connection));
+  function saveStatus(
+    entry: StoredConnection,
+    status: Partial<ConnectionSummary>,
+  ) {
+    // Settings may have changed while the provider requests were in flight.
+    const latest = connections(entry.fileId).find(c => c.id === entry.id);
+    if (latest) repository.saveConnection({ ...latest, ...status }, true);
+  }
   function portfolio(fileId: string, at?: number): Portfolio {
     const entries = connections(fileId);
+    const comparisonAt = Math.max(0, (at ?? now()) - 86400000);
+    const comparisonCollections: Record<string, Collection> = {};
     const collections: Record<string, Collection> = {};
     for (const connection of entries) {
+      const before = repository.snapshots(connection.id, comparisonAt);
+      if (before) {
+        comparisonCollections[connection.id] = { ...before, events: [] };
+      }
       const data =
         at === undefined
           ? repository.collection(connection.id)
@@ -99,6 +117,7 @@ export function createFinanceService(dependencies: {
       connections: entries.map(summary),
       collections,
       prices: repository.prices(fileId),
+      comparison: { at: comparisonAt, collections: comparisonCollections },
       updatedAt: now(),
     };
   }
@@ -181,26 +200,18 @@ export function createFinanceService(dependencies: {
         const errorCount = fresh.coverage.filter(
           c => c.status === 'error',
         ).length;
-        repository.saveConnection(
-          {
-            ...entry,
-            lastAttempt: now(),
-            lastSuccess: fresh.accounts.length ? now() : entry.lastSuccess,
-            error: errorCount
-              ? `${errorCount} provider streams need attention`
-              : undefined,
-          },
-          true,
-        );
+        saveStatus(entry, {
+          lastAttempt: now(),
+          lastSuccess: fresh.accounts.length ? now() : entry.lastSuccess,
+          error: errorCount
+            ? `${errorCount} provider streams need attention`
+            : undefined,
+        });
       } catch {
-        repository.saveConnection(
-          {
-            ...entry,
-            lastAttempt: now(),
-            error: 'Collection failed; previous data retained',
-          },
-          true,
-        );
+        saveStatus(entry, {
+          lastAttempt: now(),
+          error: 'Collection failed; previous data retained',
+        });
       } finally {
         repository.release(entry.id);
       }
@@ -245,8 +256,7 @@ export function createFinanceService(dependencies: {
         !input.name.trim() ||
         input.name.length > 100 ||
         !Number.isInteger(input.intervalMinutes) ||
-        input.intervalMinutes < 5 ||
-        input.intervalMinutes > 10080 ||
+        input.intervalMinutes !== refreshInterval(input.intervalMinutes) ||
         !/^\d{4}-\d{2}-\d{2}$/.test(input.historyStart) ||
         !Number.isFinite(Date.parse(input.historyStart)) ||
         Date.parse(input.historyStart) > now() ||
@@ -329,7 +339,9 @@ export function createFinanceService(dependencies: {
           c =>
             canRead(c) &&
             c.enabled &&
-            now() - (c.lastAttempt ?? 0) >= c.intervalMinutes * 60000,
+            (c.lastAttempt === undefined ||
+              now() - c.lastAttempt >=
+                refreshInterval(c.intervalMinutes) * 60000),
         );
       for (const connection of due) {
         await sync(connection.fileId, connection.id);
